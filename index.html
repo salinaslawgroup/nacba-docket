@@ -41,14 +41,17 @@
     font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
     font-size:16px;line-height:1.55;margin:0;padding:0 1.5rem 5rem;-webkit-font-smoothing:antialiased}
   .wrap{max-width:64rem;margin:0 auto}
-  .m,.mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
   button{font:inherit;color:inherit;cursor:pointer}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .mono,.m,.today,.eyebrow,.btn,.tab,.chip,.gate-label,.card-date,.card-days,.card-foot,
+  .panel-head,.sp-meta,.alerts-head,.a-date,.a-go,.back,.d-date,.gate-mark,.note-row,
+  td.c-off,td.c-date,td.c-owner,td.c-src,td.c-by,table.dk th,table.pk th,footer,
+  .saving,.hist-when,.hist-who,.field-label,.mini{
+    font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    font-variant-numeric:tabular-nums}
 
   /* ---- sign-in ---- */
   .gate{max-width:26rem;margin:0 auto;padding:6rem 0}
-  .gate .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--accent);margin:0 0 1rem}
   .gate h1{font-size:2rem;letter-spacing:-.02em;font-weight:600;margin:0 0 .75rem;line-height:1.1}
   .gate p{color:var(--muted);font-size:.95rem;margin:0 0 1.75rem}
   .gate form{display:flex;flex-direction:column;gap:.7rem}
@@ -57,7 +60,6 @@
   .gate button[type=submit]{background:var(--accent);color:var(--ground);border:none;
     border-radius:3px;padding:.65rem;font-family:ui-monospace,Menlo,monospace;font-size:.72rem;
     letter-spacing:.09em;text-transform:uppercase}
-  .gate button[type=submit]:disabled{opacity:.55;cursor:default}
   .msg{font-size:.9rem;padding:.75rem .9rem;border-radius:3px;margin-top:1rem}
   .msg.ok{background:var(--ok-soft);color:var(--ok)}
   .msg.err{background:var(--critical-soft);color:var(--critical)}
@@ -66,39 +68,42 @@
   /* ---- masthead ---- */
   header.masthead{padding:3rem 0 1.5rem;border-bottom:2px solid var(--ink);margin-bottom:2rem;
     display:flex;flex-wrap:wrap;gap:1.25rem;align-items:flex-end;justify-content:space-between}
-  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--accent);margin:0 0 .75rem}
+  .eyebrow{font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin:0 0 .75rem}
   h1{font-size:clamp(1.9rem,4.5vw,2.5rem);line-height:1.06;letter-spacing:-.02em;font-weight:600;margin:0}
   .masthead-right{display:flex;flex-direction:column;align-items:flex-end;gap:.6rem}
-  .today{font-family:ui-monospace,Menlo,monospace;font-size:.7rem;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--faint);text-align:right}
+  .today{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:right}
+  .btn-row{display:flex;gap:.4rem;flex-wrap:wrap}
   .btn{background:var(--surface);border:1px solid var(--rule-strong);border-radius:3px;
-    padding:.38rem .7rem;font-family:ui-monospace,Menlo,monospace;font-size:.68rem;
-    letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    padding:.38rem .7rem;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--ground)}
+  .btn.danger:hover{border-color:var(--critical);color:var(--critical)}
+  .mini{font-size:.6rem;letter-spacing:.07em;text-transform:uppercase;background:none;
+    border:none;padding:.15rem .3rem;color:var(--faint)}
+  .mini:hover{color:var(--accent);text-decoration:underline}
+  .mini.danger:hover{color:var(--critical)}
 
   /* ---- alerts ---- */
   .alerts{margin-bottom:2rem}
-  .alerts-head{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--critical);margin:0 0 .6rem}
+  .alerts-head{font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--critical);margin:0 0 .6rem}
   .alert{display:grid;grid-template-columns:5.5rem 1fr auto;gap:0 1rem;align-items:baseline;
     padding:.65rem .9rem;background:var(--critical-soft);border-left:3px solid var(--critical);
     border-radius:0 3px 3px 0;margin-bottom:2px}
-  .alert .a-date{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;font-weight:600;
-    color:var(--critical);white-space:nowrap}
-  .alert .a-text{font-size:.92rem}
-  .alert .a-go{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--critical);background:none;border:none;padding:0;white-space:nowrap}
-  .alert .a-go:hover{text-decoration:underline}
+  .a-date{font-size:.72rem;font-weight:600;color:var(--critical);white-space:nowrap}
+  .a-text{font-size:.92rem}
+  .a-go{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--critical);
+    background:none;border:none;padding:0;white-space:nowrap}
+  .a-go:hover{text-decoration:underline}
 
   /* ---- tabs ---- */
-  .tabs{display:flex;gap:.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--rule)}
+  .tabs{display:flex;gap:.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--rule);
+    align-items:center;flex-wrap:wrap}
   .tab{background:none;border:none;border-bottom:2px solid transparent;padding:.5rem .85rem;
-    font-family:ui-monospace,Menlo,monospace;font-size:.7rem;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--faint);margin-bottom:-1px}
+    font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:-1px}
   .tab:hover{color:var(--ink)}
   .tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
   .tab .count{opacity:.6;margin-left:.3rem}
+  .tabs .spacer{flex:1}
 
   /* ---- cards ---- */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(20rem,1fr));gap:1rem}
@@ -109,14 +114,11 @@
   .card.is-past{opacity:.72}
   .card.is-urgent{border-left:3px solid var(--critical)}
   .card-top{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem}
-  .card-date{font-family:ui-monospace,Menlo,monospace;font-size:.74rem;font-weight:600;
-    letter-spacing:.03em;color:var(--accent);white-space:nowrap}
-  .card-days{font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.05em;
-    text-transform:uppercase;color:var(--faint);white-space:nowrap}
+  .card-date{font-size:.74rem;font-weight:600;letter-spacing:.03em;color:var(--accent);white-space:nowrap}
+  .card-days{font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
   .card-days.soon{color:var(--warn)}
   .card h3{font-size:1.02rem;font-weight:600;line-height:1.32;margin:0;letter-spacing:-.004em}
-  .speakers-line{font-size:.86rem;color:var(--muted);display:flex;flex-wrap:wrap;
-    gap:.3rem .45rem;align-items:center}
+  .speakers-line{font-size:.86rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.3rem .45rem;align-items:center}
   .sp{display:inline-flex;align-items:center;gap:.3rem}
   .sp-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:none}
   .sp-dot.un{background:var(--warn)}
@@ -126,87 +128,112 @@
   .gate-bar{height:3px;border-radius:2px;background:var(--rule-strong)}
   .gate-c.done .gate-bar{background:var(--ok)}
   .gate-c.late .gate-bar{background:var(--critical)}
-  .gate-label{font-family:ui-monospace,Menlo,monospace;font-size:.55rem;letter-spacing:.05em;
-    text-transform:uppercase;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gate-label{font-size:.55rem;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gate-c.done .gate-label{color:var(--ok)}
   .gate-c.late .gate-label{color:var(--critical)}
-  .card-foot{font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.04em;
-    color:var(--faint);display:flex;justify-content:space-between;gap:.5rem}
+  .card-foot{font-size:.66rem;letter-spacing:.04em;color:var(--faint);display:flex;
+    justify-content:space-between;gap:.5rem}
   .card-foot .late-n{color:var(--critical);font-weight:600}
 
   /* ---- detail ---- */
-  .back{background:none;border:none;padding:0;font-family:ui-monospace,Menlo,monospace;
-    font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem}
+  .back{background:none;border:none;padding:0;font-size:.68rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem}
   .back:hover{text-decoration:underline}
   .detail-head{margin-bottom:2rem}
-  .detail-head .d-date{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--accent);margin:0 0 .6rem}
+  .detail-head .d-date{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 .6rem;display:flex;gap:1rem;align-items:baseline;flex-wrap:wrap}
   .detail-head h2{font-size:clamp(1.4rem,3.5vw,1.95rem);line-height:1.15;letter-spacing:-.015em;
     font-weight:600;margin:0 0 .85rem;text-wrap:balance;max-width:34ch}
   .detail-head p.desc{color:var(--muted);font-size:.95rem;margin:0;max-width:68ch}
   .detail-head p.desc.missing{color:var(--critical);font-style:italic}
   .panel{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
     padding:1.1rem 1.25rem;margin-bottom:1.75rem;box-shadow:var(--shadow)}
-  .panel-head{font-family:ui-monospace,Menlo,monospace;font-size:.64rem;letter-spacing:.13em;
-    text-transform:uppercase;color:var(--faint);margin:0 0 .9rem;display:flex;
-    justify-content:space-between;align-items:baseline;gap:1rem}
+  .panel-head{font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);
+    margin:0 0 .9rem;display:flex;justify-content:space-between;align-items:baseline;gap:1rem}
   .sp-row{display:grid;grid-template-columns:1fr auto;gap:.3rem 1rem;padding:.65rem 0;
-    border-top:1px solid var(--rule);align-items:baseline}
+    border-top:1px solid var(--rule);align-items:center}
   .sp-row:first-of-type{border-top:none;padding-top:0}
   .sp-name{font-weight:600;font-size:.97rem}
-  .sp-meta{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:var(--muted);
-    margin-top:.15rem;word-break:break-word}
-  .chip{font-family:ui-monospace,Menlo,monospace;font-size:.58rem;letter-spacing:.1em;
-    text-transform:uppercase;padding:.2rem .45rem;border-radius:2px;white-space:nowrap}
+  .sp-meta{font-size:.72rem;color:var(--muted);margin-top:.15rem;word-break:break-word}
+  .sp-actions{display:flex;gap:.5rem;align-items:center}
+  .chip{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .45rem;
+    border-radius:2px;white-space:nowrap}
   .chip-ok{background:var(--ok-soft);color:var(--ok)}
   .chip-warn{background:var(--warn-soft);color:var(--warn)}
-  .empty-note{color:var(--critical);font-style:italic;font-size:.93rem;margin:0}
+  .empty-note{color:var(--critical);font-style:italic;font-size:.93rem;margin:0 0 .5rem}
   .note-row{border-top:1px solid var(--rule);padding-top:.65rem;margin-top:.35rem;
-    font-family:ui-monospace,Menlo,monospace;font-size:.74rem;color:var(--warn);line-height:1.5}
+    font-size:.74rem;color:var(--warn);line-height:1.5}
 
+  /* ---- forms ---- */
+  .form{display:flex;flex-direction:column;gap:.9rem;margin:0}
+  .field{display:flex;flex-direction:column;gap:.3rem}
+  .field-label{font-size:.6rem;letter-spacing:.11em;text-transform:uppercase;color:var(--faint)}
+  .form input[type=text],.form input[type=date],.form input[type=email],.form textarea,.form select{
+    font:inherit;font-size:.94rem;padding:.5rem .65rem;border:1px solid var(--rule-strong);
+    border-radius:3px;background:var(--surface-2);color:var(--ink);width:100%}
+  .form textarea{min-height:6rem;resize:vertical;line-height:1.5}
+  .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.9rem}
+  .form-actions{display:flex;gap:.5rem;align-items:center;margin-top:.2rem}
+  select.conf{font:inherit;font-family:ui-monospace,Menlo,monospace;font-size:.66rem;
+    letter-spacing:.06em;text-transform:uppercase;padding:.22rem .4rem;border-radius:2px;
+    border:1px solid var(--rule-strong);background:var(--surface-2);color:var(--muted)}
+  .add-row{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;
+    border-top:1px solid var(--rule);padding-top:.85rem;margin-top:.35rem}
+  .add-row .field{flex:1;min-width:14rem}
+
+  /* ---- tables ---- */
   .dk-scroll,.pk-scroll{overflow-x:auto}
   table.dk{width:100%;min-width:42rem;border-collapse:collapse;font-size:.88rem}
-  table.dk th{font-family:ui-monospace,Menlo,monospace;font-size:.58rem;letter-spacing:.11em;
-    text-transform:uppercase;color:var(--faint);text-align:left;font-weight:400;
-    padding:0 .75rem .55rem 0;border-bottom:1px solid var(--rule-strong)}
+  table.dk th{font-size:.58rem;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);
+    text-align:left;font-weight:400;padding:0 .75rem .55rem 0;border-bottom:1px solid var(--rule-strong)}
   table.dk td{padding:.5rem .75rem .5rem 0;border-bottom:1px solid var(--rule);vertical-align:baseline}
   table.dk td.c-check{width:1.9rem;padding-right:.5rem}
   table.dk input[type=checkbox],table.pk input[type=checkbox]{width:15px;height:15px;
     accent-color:var(--accent);cursor:pointer;margin:0;vertical-align:middle}
-  td.c-off{font-family:ui-monospace,Menlo,monospace;font-size:.76rem;font-weight:600;
-    color:var(--accent);white-space:nowrap}
-  td.c-date{font-family:ui-monospace,Menlo,monospace;font-size:.74rem;color:var(--muted);white-space:nowrap}
-  td.c-owner,td.c-src,td.c-by{font-family:ui-monospace,Menlo,monospace;font-size:.68rem;
-    color:var(--faint);white-space:nowrap}
+  td.c-off{font-size:.76rem;font-weight:600;color:var(--accent);white-space:nowrap}
+  td.c-date{font-size:.74rem;color:var(--muted);white-space:nowrap}
+  td.c-owner,td.c-src,td.c-by{font-size:.68rem;color:var(--faint);white-space:nowrap}
   tr.done td.c-task{color:var(--faint);text-decoration:line-through;text-decoration-thickness:1px}
   tr.done td.c-off{color:var(--faint)}
   tr.late td.c-date{color:var(--critical);font-weight:600}
   tr.late td.c-off{color:var(--critical)}
   tr.soon td.c-date{color:var(--warn);font-weight:600}
-  .gate-mark{font-family:ui-monospace,Menlo,monospace;font-size:.55rem;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--critical);margin-left:.5rem;white-space:nowrap}
+  .gate-mark{font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--critical);
+    margin-left:.5rem;white-space:nowrap}
   tr.done .gate-mark{color:var(--faint)}
   table.pk{width:100%;min-width:34rem;border-collapse:collapse;font-size:.85rem}
-  table.pk th{font-family:ui-monospace,Menlo,monospace;font-size:.56rem;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--faint);font-weight:400;text-align:center;
-    padding:0 .4rem .55rem;border-bottom:1px solid var(--rule-strong)}
+  table.pk th{font-size:.56rem;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);
+    font-weight:400;text-align:center;padding:0 .4rem .55rem;border-bottom:1px solid var(--rule-strong)}
   table.pk th.n{text-align:left;padding-left:0}
   table.pk td{padding:.5rem .4rem;border-bottom:1px solid var(--rule);text-align:center}
   table.pk td.n{text-align:left;padding-left:0;font-size:.9rem}
 
+  /* ---- history ---- */
+  .hist{display:flex;flex-direction:column}
+  .hist-item{display:grid;grid-template-columns:6.5rem 1fr;gap:.2rem .9rem;padding:.55rem 0;
+    border-top:1px solid var(--rule);align-items:baseline}
+  .hist-item:first-child{border-top:none;padding-top:0}
+  .hist-when{font-size:.66rem;color:var(--faint);white-space:nowrap}
+  .hist-what{font-size:.9rem}
+  .hist-what .f{color:var(--accent);font-weight:600}
+  .hist-what .old{color:var(--faint);text-decoration:line-through;text-decoration-thickness:1px}
+  .hist-who{font-size:.64rem;color:var(--faint);letter-spacing:.04em}
+  .hist-empty{color:var(--faint);font-size:.9rem;margin:0}
+
   footer{margin-top:3.5rem;padding-top:1.25rem;border-top:2px solid var(--ink);
-    font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.05em;
-    color:var(--faint);text-transform:uppercase;display:flex;flex-wrap:wrap;
-    gap:.5rem 1.5rem;justify-content:space-between}
+    font-size:.66rem;letter-spacing:.05em;color:var(--faint);text-transform:uppercase;
+    display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;justify-content:space-between}
   .saving{position:fixed;bottom:1rem;right:1rem;background:var(--surface);
-    border:1px solid var(--rule-strong);border-radius:3px;padding:.4rem .7rem;
-    font-family:ui-monospace,Menlo,monospace;font-size:.66rem;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--muted);box-shadow:var(--shadow)}
+    border:1px solid var(--rule-strong);border-radius:3px;padding:.4rem .7rem;font-size:.66rem;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--muted);box-shadow:var(--shadow);z-index:9}
   .saving.err{color:var(--critical);border-color:var(--critical)}
   @media (max-width:34rem){
     body{padding:0 1rem 4rem} header.masthead{padding-top:2rem}
     .masthead-right{align-items:flex-start}
-    .alert{grid-template-columns:1fr;gap:.3rem} .alert .a-go{justify-self:start}
+    .alert{grid-template-columns:1fr;gap:.3rem} .a-go{justify-self:start}
+    .hist-item{grid-template-columns:1fr}
+    .sp-row{grid-template-columns:1fr;align-items:start}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -217,12 +244,10 @@
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
-/* ---------- config ---------- */
 const SUPABASE_URL = "https://lnollnddtavdhigkkefy.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OAzj077fESqmwN8LUre8Lg_yWPVjTUQ";
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ---------- constants ---------- */
 const PACKAGE_ITEMS = [
   { id:"bio", label:"Bio" }, { id:"headshot", label:"Headshot" },
   { id:"agreement", label:"Agreement" }, { id:"outline", label:"Outline" },
@@ -233,318 +258,507 @@ const GATE_LABELS = [
   { key:"registration", label:"Registration" }, { key:"materials", label:"Materials" },
   { key:"runofshow", label:"Run of show" }
 ];
+const CONFIRMATIONS = ["invited","asked","confirmed","declined"];
+const FIELD_NAMES = {
+  title:"title", description:"description", event_date:"date", note:"note",
+  confirmation:"confirmation", topic:"topic", full_name:"name", email:"email",
+  firm:"firm", preferred_title:"preferred title", pronunciation:"pronunciation",
+  headshot_location:"headshot location", bio_location:"bio location", phone:"phone",
+  added:"added", removed:"removed", confirmed_on:"confirmed on", kind:"type", archived:"archived"
+};
+
 const DAY = 86400000;
 const FMT_SHORT = new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",timeZone:"UTC"});
 const FMT_FULL  = new Intl.DateTimeFormat("en-US",{weekday:"short",month:"long",day:"numeric",year:"numeric",timeZone:"UTC"});
 const FMT_CARD  = new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"});
+const FMT_LOG   = new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 
-const parseISO = iso => { const [y,m,d] = iso.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
+const parseISO = iso => { const [y,m,d]=iso.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
 const addDays  = (dt,n) => new Date(dt.getTime()+n*DAY);
 const todayUTC = () => { const n=new Date(); return new Date(Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())); };
 const diffDays = (a,b) => Math.round((b-a)/DAY);
 const offLabel = o => o===0 ? "T−0" : (o<0 ? "T−"+Math.abs(o) : "T+"+o);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const val = id => (document.getElementById(id)?.value ?? "").trim();
 
-/* ---------- state ---------- */
-let session = null, programs = [], view = { name:"season", tab:"upcoming", id:null };
+let session=null, programs=[], roster=[], history=[], busy=false;
+let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false };
 const app = document.getElementById("app");
 
-/* ---------- sign in ---------- */
+/* ================= sign in ================= */
 function renderGate(msg, kind) {
   app.innerHTML =
-    '<div class="gate"><p class="eyebrow">NACBA · Education Committee</p>' +
-    "<h1>Webinar Docket</h1>" +
+    '<div class="gate"><p class="eyebrow">NACBA · Education Committee</p><h1>Webinar Docket</h1>' +
     "<p>Enter your work email and we'll send you a sign-in link. No password to remember.</p>" +
     '<form id="signin"><input type="email" id="email" placeholder="you@example.com" required autocomplete="email">' +
     '<button type="submit">Send sign-in link</button></form>' +
     (msg ? '<div class="msg '+kind+'">'+esc(msg)+"</div>" : "") +
-    '<p class="fine">Access is limited to staff on the Education Committee list. ' +
-    "If your email isn't on it, the link will sign you in but show nothing.</p></div>";
-
+    '<p class="fine">Access is limited to staff on the Education Committee list.</p></div>';
   document.getElementById("signin").addEventListener("submit", async e => {
     e.preventDefault();
-    const btn = e.target.querySelector("button");
-    const email = document.getElementById("email").value.trim();
-    btn.disabled = true; btn.textContent = "Sending…";
-    const { error } = await sb.auth.signInWithOtp({
-      email, options: { emailRedirectTo: window.location.href.split("#")[0] }
-    });
-    if (error) renderGate(error.message, "err");
-    else renderGate("Check " + email + " for your sign-in link. It expires in an hour.", "ok");
+    const btn=e.target.querySelector("button"), email=val("email");
+    btn.disabled=true; btn.textContent="Sending…";
+    const { error } = await sb.auth.signInWithOtp({ email,
+      options:{ emailRedirectTo: window.location.href.split("#")[0] } });
+    renderGate(error ? error.message : "Check "+email+" for your sign-in link. It expires in an hour.",
+      error ? "err" : "ok");
   });
 }
 
-/* ---------- data ---------- */
+/* ================= data ================= */
 async function loadData() {
-  const { data, error } = await sb
-    .from("programs")
-    .select(`id, slug, event_date, title, description, note,
+  const [pRes, sRes] = await Promise.all([
+    sb.from("programs").select(`id, slug, event_date, title, description, note,
       program_speakers ( id, topic, confirmation, sort_order,
-        speakers ( id, full_name, preferred_title, firm, email ),
+        speakers ( id, full_name, preferred_title, firm, email, phone, pronunciation,
+                   headshot_location, bio_location ),
         deliverables ( id, item, received ) ),
       tasks ( id, offset_days, seq, task, owner_role, source_ref, is_gate, gate_key, done, done_by )`)
-    .order("event_date");
-  if (error) throw error;
-  programs = (data || []).map(p => ({
-    ...p,
-    program_speakers: (p.program_speakers || []).sort((a,b) => a.sort_order - b.sort_order),
-    tasks: (p.tasks || []).sort((a,b) => a.offset_days - b.offset_days || a.seq - b.seq)
-  }));
+      .order("event_date"),
+    sb.from("speakers").select("id, full_name").order("full_name")
+  ]);
+  if (pRes.error) throw pRes.error;
+  programs = (pRes.data||[]).map(p => ({ ...p,
+    program_speakers:(p.program_speakers||[]).sort((a,b)=>a.sort_order-b.sort_order),
+    tasks:(p.tasks||[]).sort((a,b)=>a.offset_days-b.offset_days||a.seq-b.seq) }));
+  roster = sRes.data || [];
 }
 
-/* ---------- derived ---------- */
+async function loadHistory(programId) {
+  let q = sb.from("change_log")
+    .select("id, table_name, program_id, label, field, old_value, new_value, changed_by, changed_at")
+    .order("changed_at", { ascending:false }).limit(40);
+  q = programId ? q.eq("program_id", programId) : q;
+  const { data, error } = await q;
+  history = error ? [] : (data || []);
+}
+
+/* ================= derived ================= */
 const isPast = p => parseISO(p.event_date) < todayUTC();
-const speakersOk = p => p.program_speakers.length > 0 &&
-  p.program_speakers.every(ps => ps.confirmation === "confirmed");
-
-function taskStatus(p, t) {
-  const due = addDays(parseISO(p.event_date), t.offset_days), now = todayUTC();
+const speakersOk = p => p.program_speakers.length>0 &&
+  p.program_speakers.every(ps => ps.confirmation==="confirmed");
+function taskStatus(p,t){
+  const due=addDays(parseISO(p.event_date),t.offset_days), now=todayUTC();
   if (t.done) return "done";
-  if (due < now) return "late";
-  if (diffDays(now, due) <= 7) return "soon";
-  return "open";
+  if (due<now) return "late";
+  return diffDays(now,due)<=7 ? "soon" : "open";
 }
-function gateState(p, key) {
-  if (key === "speakers") {
-    if (speakersOk(p)) return "done";
-    return addDays(parseISO(p.event_date), -35) < todayUTC() ? "late" : "open";
-  }
-  const t = p.tasks.find(x => x.gate_key === key);
+function gateState(p,key){
+  if (key==="speakers") return speakersOk(p) ? "done"
+    : (addDays(parseISO(p.event_date),-35)<todayUTC() ? "late":"open");
+  const t=p.tasks.find(x=>x.gate_key===key);
   if (!t) return "open";
-  const st = taskStatus(p, t);
-  return st === "done" ? "done" : (st === "late" ? "late" : "open");
+  const st=taskStatus(p,t);
+  return st==="done" ? "done" : (st==="late" ? "late":"open");
 }
-const lateCount = p => p.tasks.filter(t => taskStatus(p,t) === "late").length;
-
-function alertsFor(p) {
+const lateCount = p => p.tasks.filter(t=>taskStatus(p,t)==="late").length;
+function alertsFor(p){
   if (isPast(p)) return [];
-  const out = [];
+  const out=[];
   if (!p.program_speakers.length) out.push("No speakers named");
   else if (!speakersOk(p)) out.push("Speakers not confirmed");
   if (!p.description) out.push("No description for registration");
-  const n = lateCount(p);
-  if (n) out.push(n + (n===1 ? " task overdue" : " tasks overdue"));
+  const n=lateCount(p);
+  if (n) out.push(n+(n===1?" task overdue":" tasks overdue"));
   return out;
 }
 
-/* ---------- render ---------- */
-function render() {
-  app.innerHTML = (view.name === "detail" ? renderDetail() : renderSeason());
-  wire();
-}
+/* ================= render ================= */
+function render(){ app.innerHTML = view.name==="detail" ? renderDetail() : renderSeason(); wire(); }
 
-function chrome(inner) {
-  const email = session?.user?.email || "";
+function chrome(inner){
   return '<header class="masthead"><div><p class="eyebrow">NACBA · Education Committee</p>' +
     "<h1>Webinar Docket</h1></div><div class=\"masthead-right\">" +
-    '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" + esc(email) + "</span>" +
-    '<button class="btn" id="signout">Sign out</button></div></header>' + inner +
-    '<footer><span>2026 season · ' + programs.length + " programs</span>" +
+    '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
+    esc(session?.user?.email||"") + '</span><div class="btn-row">' +
+    '<button class="btn" id="hist-all">History</button>' +
+    '<button class="btn" id="signout">Sign out</button></div></div></header>' + inner +
+    '<footer><span>2026 season · '+programs.length+" programs</span>" +
     "<span>Shared · saves for everyone</span></footer>";
 }
 
-function renderSeason() {
-  const upcoming = programs.filter(p => !isPast(p));
-  const past = programs.filter(isPast);
-  const list = view.tab === "upcoming" ? upcoming : (view.tab === "past" ? past : programs);
+function renderSeason(){
+  if (view.creating) return chrome(newProgramForm());
+  if (view.tab==="history") return chrome(historyPanel(null));
 
-  const rows = upcoming.map(p => {
-    const a = alertsFor(p);
-    if (!a.length) return "";
-    return '<div class="alert"><span class="a-date">' + esc(FMT_SHORT.format(parseISO(p.event_date))) +
-      '</span><span class="a-text"><b>' + esc(a.join(" · ")) + "</b> — " + esc(p.title) +
-      '</span><button class="a-go" data-open="' + p.id + '">Open →</button></div>';
+  const upcoming=programs.filter(p=>!isPast(p)), past=programs.filter(isPast);
+  const list = view.tab==="upcoming" ? upcoming : (view.tab==="past" ? past : programs);
+
+  const rows = upcoming.map(p=>{
+    const a=alertsFor(p); if(!a.length) return "";
+    return '<div class="alert"><span class="a-date">'+esc(FMT_SHORT.format(parseISO(p.event_date)))+
+      '</span><span class="a-text"><b>'+esc(a.join(" · "))+"</b> — "+esc(p.title)+
+      '</span><button class="a-go" data-open="'+p.id+'">Open →</button></div>';
   }).filter(Boolean);
 
-  const alerts = rows.length
-    ? '<section class="alerts"><p class="alerts-head">Needs attention — ' + rows.length +
-      " of " + upcoming.length + " upcoming programs</p>" + rows.join("") + "</section>" : "";
+  const alerts = rows.length ? '<section class="alerts"><p class="alerts-head">Needs attention — '+
+    rows.length+" of "+upcoming.length+" upcoming programs</p>"+rows.join("")+"</section>" : "";
 
-  const tab = (id,label,n) => '<button class="tab" role="tab" data-tab="'+id+'" aria-selected="'+
+  const tab=(id,label,n)=>'<button class="tab" role="tab" data-tab="'+id+'" aria-selected="'+
     (view.tab===id)+'">'+label+'<span class="count">'+n+"</span></button>";
 
-  return chrome(alerts +
-    '<div class="tabs" role="tablist">' + tab("upcoming","Upcoming",upcoming.length) +
-    tab("past","Completed",past.length) + tab("all","All",programs.length) + "</div>" +
-    '<div class="grid">' + list.map(card).join("") + "</div>");
+  return chrome(alerts + '<div class="tabs" role="tablist">' +
+    tab("upcoming","Upcoming",upcoming.length)+tab("past","Completed",past.length)+
+    tab("all","All",programs.length)+'<span class="spacer"></span>'+
+    '<button class="btn primary" id="new-program">+ New program</button></div>' +
+    '<div class="grid">'+list.map(card).join("")+"</div>");
 }
 
-function card(p) {
-  const d = parseISO(p.event_date), days = diffDays(todayUTC(), d);
-  const past = days < 0, late = lateCount(p), urgent = !past && alertsFor(p).length > 0;
-  const daysTxt = past ? Math.abs(days)+" days ago" : (days===0 ? "Today" : days+" days out");
-
+function card(p){
+  const d=parseISO(p.event_date), days=diffDays(todayUTC(),d);
+  const past=days<0, late=lateCount(p), urgent=!past&&alertsFor(p).length>0;
+  const daysTxt = past?Math.abs(days)+" days ago":(days===0?"Today":days+" days out");
   const sp = p.program_speakers.length
-    ? p.program_speakers.map(ps => '<span class="sp"><span class="sp-dot' +
-        (ps.confirmation==="confirmed" ? "" : " un") + '"></span>' +
-        esc((ps.speakers?.full_name||"").replace(/,\s*Esq\.$/,"")) + "</span>").join("")
+    ? p.program_speakers.map(ps=>'<span class="sp"><span class="sp-dot'+
+        (ps.confirmation==="confirmed"?"":" un")+'"></span>'+
+        esc((ps.speakers?.full_name||"").replace(/,\s*Esq\.$/,""))+"</span>").join("")
     : '<span class="sp-none">No speakers named</span>';
-
-  const gates = GATE_LABELS.map(g => '<div class="gate-c ' + gateState(p,g.key) +
-    '"><div class="gate-bar"></div><div class="gate-label">' + esc(g.label) + "</div></div>").join("");
-
-  return '<button class="card' + (past?" is-past":"") + (urgent?" is-urgent":"") +
-    '" data-open="' + p.id + '"><div class="card-top"><span class="card-date">' +
-    esc(FMT_CARD.format(d)) + '</span><span class="card-days' + (!past && days<=35 ? " soon":"") +
-    '">' + esc(daysTxt) + "</span></div><h3>" + esc(p.title) + "</h3>" +
-    '<div class="speakers-line">' + sp + '</div><div class="gates">' + gates + "</div>" +
-    '<div class="card-foot"><span>' + (past?"Complete":"12:00–1:30 PT") + "</span>" +
-    (late ? '<span class="late-n">'+late+" overdue</span>" : "<span></span>") + "</div></button>";
+  const gates = GATE_LABELS.map(g=>'<div class="gate-c '+gateState(p,g.key)+
+    '"><div class="gate-bar"></div><div class="gate-label">'+esc(g.label)+"</div></div>").join("");
+  return '<button class="card'+(past?" is-past":"")+(urgent?" is-urgent":"")+'" data-open="'+p.id+
+    '"><div class="card-top"><span class="card-date">'+esc(FMT_CARD.format(d))+
+    '</span><span class="card-days'+(!past&&days<=35?" soon":"")+'">'+esc(daysTxt)+
+    "</span></div><h3>"+esc(p.title)+"</h3>"+'<div class="speakers-line">'+sp+
+    '</div><div class="gates">'+gates+'</div><div class="card-foot"><span>'+
+    (past?"Complete":"12:00–1:30 PT")+"</span>"+
+    (late?'<span class="late-n">'+late+" overdue</span>":"<span></span>")+"</div></button>";
 }
 
-function renderDetail() {
-  const p = programs.find(x => x.id === view.id);
-  if (!p) return chrome("");
-  const d = parseISO(p.event_date), days = diffDays(todayUTC(), d), past = days < 0;
+function newProgramForm(){
+  return '<button class="back" data-back>← All programs</button>' +
+    '<section class="panel"><p class="panel-head"><span>New program</span>' +
+    "<span>docket generates on save</span></p>" +
+    '<div class="form"><div class="form-row">' +
+    '<div class="field"><label class="field-label" for="np-date">Event date</label>' +
+    '<input type="date" id="np-date" required></div></div>' +
+    '<div class="field"><label class="field-label" for="np-title">Program title</label>' +
+    '<input type="text" id="np-title" placeholder="Working title is fine" required></div>' +
+    '<div class="field"><label class="field-label" for="np-desc">Description / objectives</label>' +
+    '<textarea id="np-desc" placeholder="Needed before registration can open."></textarea></div>' +
+    '<div class="field"><label class="field-label" for="np-note">Internal note</label>' +
+    '<input type="text" id="np-note" placeholder="Anything staff should know"></div>' +
+    '<div class="form-actions"><button class="btn primary" id="np-save">Create program</button>' +
+    '<button class="btn" data-back>Cancel</button></div></div></section>';
+}
 
-  const head = '<button class="back" data-back>← All programs</button><div class="detail-head">' +
-    '<p class="d-date">' + esc(FMT_FULL.format(d)) + " · 12:00–1:30 PT · " +
-    (past ? Math.abs(days)+" days ago" : (days===0?"Today":days+" days out")) + "</p><h2>" +
-    esc(p.title) + "</h2>" + (p.description
-      ? '<p class="desc">' + esc(p.description) + "</p>"
-      : '<p class="desc missing">No description on file — registration cannot open without one.</p>') +
+function renderDetail(){
+  const p=programs.find(x=>x.id===view.id);
+  if (!p) return chrome("");
+  const d=parseISO(p.event_date), days=diffDays(todayUTC(),d), past=days<0;
+
+  const head = view.edit ? editProgramForm(p) :
+    '<div class="detail-head"><p class="d-date"><span>'+esc(FMT_FULL.format(d))+
+    " · 12:00–1:30 PT · "+(past?Math.abs(days)+" days ago":(days===0?"Today":days+" days out"))+
+    '</span><button class="mini" id="edit-program">Edit program</button></p><h2>'+esc(p.title)+"</h2>"+
+    (p.description ? '<p class="desc">'+esc(p.description)+"</p>"
+      : '<p class="desc missing">No description on file — registration cannot open without one.</p>')+
     "</div>";
 
-  const spRows = p.program_speakers.length
-    ? p.program_speakers.map(ps => {
-        const s = ps.speakers || {};
-        const meta = [ps.topic, s.preferred_title, s.firm, s.email].filter(Boolean).join(" · ");
-        const okc = ps.confirmation === "confirmed";
-        return '<div class="sp-row"><div><div class="sp-name">' + esc(s.full_name) + "</div>" +
-          (meta ? '<div class="sp-meta">' + esc(meta) + "</div>" : "") + "</div>" +
-          '<span class="chip ' + (okc?"chip-ok":"chip-warn") + '">' +
-          esc(ps.confirmation) + "</span></div>";
-      }).join("")
-    : '<p class="empty-note">No speakers named. Every downstream deadline — agreement, bio, headshot, outline, marketing — depends on this.</p>';
+  /* speakers */
+  const spRows = p.program_speakers.length ? p.program_speakers.map(ps=>{
+    if (view.editSpeaker===ps.id) return editSpeakerForm(ps);
+    const s=ps.speakers||{};
+    const meta=[ps.topic,s.preferred_title,s.firm,s.email,
+      s.pronunciation?"say: "+s.pronunciation:""].filter(Boolean).join(" · ");
+    return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+"</div>"+
+      (meta?'<div class="sp-meta">'+esc(meta)+"</div>":"")+"</div>"+
+      '<div class="sp-actions"><select class="conf" data-conf="'+ps.id+'">'+
+      CONFIRMATIONS.map(c=>'<option value="'+c+'"'+(ps.confirmation===c?" selected":"")+">"+c+"</option>").join("")+
+      '</select><button class="mini" data-editsp="'+ps.id+'">Edit</button>'+
+      '<button class="mini danger" data-rmsp="'+ps.id+'" data-name="'+esc(s.full_name)+'">Remove</button>'+
+      "</div></div>";
+  }).join("") : '<p class="empty-note">No speakers named. Every downstream deadline — agreement, bio, headshot, outline, marketing — depends on this.</p>';
 
-  const speakersPanel = '<section class="panel"><p class="panel-head"><span>Speakers</span><span>' +
-    p.program_speakers.length + " on record</span></p>" + spRows +
-    (p.note ? '<div class="note-row">' + esc(p.note) + "</div>" : "") + "</section>";
+  const addRow = '<div class="add-row"><div class="field">'+
+    '<label class="field-label" for="add-sp">Add speaker</label>'+
+    '<input type="text" id="add-sp" list="roster-list" placeholder="Type a name — existing or new">'+
+    '<datalist id="roster-list">'+roster.map(r=>'<option value="'+esc(r.full_name)+'"></option>').join("")+
+    "</datalist></div>"+
+    '<button class="btn" id="add-sp-btn" data-program="'+p.id+'">Add</button></div>';
 
-  let pkgPanel = "";
-  if (p.program_speakers.length) {
-    const rows = p.program_speakers.map(ps => '<tr><td class="n">' +
-      esc(ps.speakers?.full_name || "") + "</td>" +
-      PACKAGE_ITEMS.map(it => {
-        const dl = (ps.deliverables||[]).find(x => x.item === it.id);
+  const speakersPanel='<section class="panel"><p class="panel-head"><span>Speakers</span><span>'+
+    p.program_speakers.length+" on record</span></p>"+spRows+addRow+
+    (p.note?'<div class="note-row">'+esc(p.note)+"</div>":"")+"</section>";
+
+  /* package */
+  let pkgPanel="";
+  if (p.program_speakers.length){
+    const rows=p.program_speakers.map(ps=>'<tr><td class="n">'+esc(ps.speakers?.full_name||"")+"</td>"+
+      PACKAGE_ITEMS.map(it=>{
+        const dl=(ps.deliverables||[]).find(x=>x.item===it.id);
         if (!dl) return "<td>—</td>";
-        return '<td><input type="checkbox" data-deliv="' + dl.id + '"' +
-          (dl.received ? " checked":"") + ' aria-label="' +
-          esc((ps.speakers?.full_name||"") + " " + it.label) + '"></td>';
-      }).join("") + "</tr>").join("");
-    pkgPanel = '<section class="panel"><p class="panel-head"><span>Speaker package · §2.1</span>' +
-      "<span>due T−21</span></p><div class=\"pk-scroll\"><table class=\"pk\"><thead><tr><th class=\"n\">Speaker</th>" +
-      PACKAGE_ITEMS.map(it => "<th>"+esc(it.label)+"</th>").join("") +
-      "</tr></thead><tbody>" + rows + "</tbody></table></div></section>";
+        return '<td><input type="checkbox" data-deliv="'+dl.id+'"'+(dl.received?" checked":"")+
+          ' aria-label="'+esc((ps.speakers?.full_name||"")+" "+it.label)+'"></td>';
+      }).join("")+"</tr>").join("");
+    pkgPanel='<section class="panel"><p class="panel-head"><span>Speaker package · §2.1</span>'+
+      '<span>due T−21</span></p><div class="pk-scroll"><table class="pk"><thead><tr><th class="n">Speaker</th>'+
+      PACKAGE_ITEMS.map(it=>"<th>"+esc(it.label)+"</th>").join("")+
+      "</tr></thead><tbody>"+rows+"</tbody></table></div></section>";
   }
 
-  const dkRows = p.tasks.map(t => {
-    const st = taskStatus(p,t), due = addDays(parseISO(p.event_date), t.offset_days);
-    return '<tr class="'+st+'"><td class="c-check"><input type="checkbox" data-task="'+t.id+'"' +
-      (t.done?" checked":"") + ' aria-label="'+esc(t.task)+'"></td>' +
-      '<td class="c-off">'+offLabel(t.offset_days)+'</td>' +
-      '<td class="c-date">'+esc(FMT_SHORT.format(due))+"</td>" +
-      '<td class="c-task">'+esc(t.task)+(t.is_gate?'<span class="gate-mark">▪ gate</span>':"")+"</td>" +
-      '<td class="c-owner">'+esc(t.owner_role)+"</td>" +
-      '<td class="c-src">'+esc(t.source_ref)+"</td>" +
-      '<td class="c-by">'+esc((t.done_by||"").split("@")[0])+"</td></tr>";
+  /* docket */
+  const dkRows=p.tasks.map(t=>{
+    const st=taskStatus(p,t), due=addDays(parseISO(p.event_date),t.offset_days);
+    return '<tr class="'+st+'"><td class="c-check"><input type="checkbox" data-task="'+t.id+'"'+
+      (t.done?" checked":"")+' aria-label="'+esc(t.task)+'"></td><td class="c-off">'+
+      offLabel(t.offset_days)+'</td><td class="c-date">'+esc(FMT_SHORT.format(due))+
+      '</td><td class="c-task">'+esc(t.task)+(t.is_gate?'<span class="gate-mark">▪ gate</span>':"")+
+      '</td><td class="c-owner">'+esc(t.owner_role)+'</td><td class="c-src">'+esc(t.source_ref)+
+      '</td><td class="c-by">'+esc((t.done_by||"").split("@")[0])+"</td></tr>";
   }).join("");
+  const docket='<section class="panel"><p class="panel-head"><span>Docket</span><span>'+
+    p.tasks.filter(t=>t.done).length+" of "+p.tasks.length+" complete</span></p>"+
+    '<div class="dk-scroll"><table class="dk"><thead><tr><th></th><th>Offset</th><th>Date</th>'+
+    "<th>Task</th><th>Owner</th><th>Source</th><th>By</th></tr></thead><tbody>"+dkRows+
+    "</tbody></table></div></section>";
 
-  const doneN = p.tasks.filter(t => t.done).length;
-  const docket = '<section class="panel"><p class="panel-head"><span>Docket</span><span>' +
-    doneN + " of " + p.tasks.length + " complete</span></p>" +
-    '<div class="dk-scroll"><table class="dk"><thead><tr><th></th><th>Offset</th><th>Date</th>' +
-    "<th>Task</th><th>Owner</th><th>Source</th><th>By</th></tr></thead><tbody>" +
-    dkRows + "</tbody></table></div></section>";
-
-  return chrome(head + speakersPanel + pkgPanel + docket);
+  return chrome('<button class="back" data-back>← All programs</button>'+head+
+    speakersPanel+pkgPanel+docket+historyPanel(p.id));
 }
 
-/* ---------- saving ---------- */
-let toastEl = null;
-function toast(text, isErr) {
-  if (!toastEl) { toastEl = document.createElement("div"); document.body.appendChild(toastEl); }
-  toastEl.className = "saving" + (isErr ? " err" : "");
-  toastEl.textContent = text;
+function editProgramForm(p){
+  return '<section class="panel"><p class="panel-head"><span>Edit program</span>'+
+    "<span>docket shifts with the date</span></p><div class=\"form\">"+
+    '<div class="form-row"><div class="field"><label class="field-label" for="ep-date">Event date</label>'+
+    '<input type="date" id="ep-date" value="'+esc(p.event_date)+'"></div></div>'+
+    '<div class="field"><label class="field-label" for="ep-title">Program title</label>'+
+    '<input type="text" id="ep-title" value="'+esc(p.title)+'"></div>'+
+    '<div class="field"><label class="field-label" for="ep-desc">Description / objectives</label>'+
+    "<textarea id=\"ep-desc\">"+esc(p.description)+"</textarea></div>"+
+    '<div class="field"><label class="field-label" for="ep-note">Internal note</label>'+
+    '<input type="text" id="ep-note" value="'+esc(p.note)+'"></div>'+
+    '<div class="form-actions"><button class="btn primary" id="ep-save" data-id="'+p.id+
+    '">Save changes</button><button class="btn" id="ep-cancel">Cancel</button></div></div></section>';
+}
+
+function editSpeakerForm(ps){
+  const s=ps.speakers||{};
+  return '<div class="sp-row" style="grid-template-columns:1fr"><div class="form">'+
+    '<div class="form-row">'+
+    '<div class="field"><label class="field-label" for="es-name">Full name</label>'+
+    '<input type="text" id="es-name" value="'+esc(s.full_name)+'"></div>'+
+    '<div class="field"><label class="field-label" for="es-title">Preferred title</label>'+
+    '<input type="text" id="es-title" value="'+esc(s.preferred_title)+'"></div></div>'+
+    '<div class="form-row">'+
+    '<div class="field"><label class="field-label" for="es-firm">Firm</label>'+
+    '<input type="text" id="es-firm" value="'+esc(s.firm)+'"></div>'+
+    '<div class="field"><label class="field-label" for="es-email">Email</label>'+
+    '<input type="email" id="es-email" value="'+esc(s.email)+'"></div></div>'+
+    '<div class="form-row">'+
+    '<div class="field"><label class="field-label" for="es-phone">Phone</label>'+
+    '<input type="text" id="es-phone" value="'+esc(s.phone)+'"></div>'+
+    '<div class="field"><label class="field-label" for="es-say">Name pronunciation</label>'+
+    '<input type="text" id="es-say" value="'+esc(s.pronunciation)+'" placeholder="MAG-duh-leen"></div></div>'+
+    '<div class="form-row">'+
+    '<div class="field"><label class="field-label" for="es-head">Headshot location</label>'+
+    '<input type="text" id="es-head" value="'+esc(s.headshot_location)+'" placeholder="Internal marketing files — never the attendee ZIP"></div>'+
+    '<div class="field"><label class="field-label" for="es-bio">Bio location</label>'+
+    '<input type="text" id="es-bio" value="'+esc(s.bio_location)+'"></div></div>'+
+    '<div class="field"><label class="field-label" for="es-topic">Topic on this program</label>'+
+    '<input type="text" id="es-topic" value="'+esc(ps.topic)+'"></div>'+
+    '<div class="form-actions"><button class="btn primary" id="es-save" data-sp="'+s.id+
+    '" data-ps="'+ps.id+'">Save speaker</button>'+
+    '<button class="btn" id="es-cancel">Cancel</button></div></div></div>';
+}
+
+function historyPanel(programId){
+  const items = history.length ? history.map(h=>{
+    const f = FIELD_NAMES[h.field] || h.field;
+    let what;
+    if (h.field==="added")        what='<span class="f">Added</span> '+esc(h.new_value||h.label);
+    else if (h.field==="removed") what='<span class="f">Removed</span> '+esc(h.old_value||h.label);
+    else what = esc(h.label)+' — <span class="f">'+esc(f)+"</span> "+
+      (h.old_value?'<span class="old">'+esc(trunc(h.old_value))+"</span> → ":"set to ")+
+      esc(trunc(h.new_value)||"empty");
+    return '<div class="hist-item"><span class="hist-when">'+
+      esc(FMT_LOG.format(new Date(h.changed_at)))+'</span><div><div class="hist-what">'+what+
+      '</div><div class="hist-who">'+esc((h.changed_by||"").split("@")[0])+"</div></div></div>";
+  }).join("") : '<p class="hist-empty">No changes recorded yet.</p>';
+
+  return '<section class="panel"><p class="panel-head"><span>Change history</span><span>'+
+    (programId?"this program":"everything")+"</span></p>"+
+    '<div class="hist">'+items+"</div></section>";
+}
+const trunc = s => { s=String(s??""); return s.length>70 ? s.slice(0,70)+"…" : s; };
+
+/* ================= saving ================= */
+let toastEl=null;
+function toast(text,isErr){
+  if(!toastEl){ toastEl=document.createElement("div"); document.body.appendChild(toastEl); }
+  toastEl.className="saving"+(isErr?" err":""); toastEl.textContent=text;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => { if (toastEl) toastEl.remove(); toastEl = null; }, isErr ? 6000 : 1400);
+  toast._t=setTimeout(()=>{ toastEl?.remove(); toastEl=null; }, isErr?7000:1400);
 }
 
-async function setTask(id, done) {
-  const p = programs.find(x => x.tasks.some(t => t.id === id));
-  const t = p.tasks.find(t => t.id === id);
-  const prev = t.done;
-  t.done = done; render(); toast("Saving…");
-  const { error } = await sb.from("tasks").update({ done }).eq("id", id);
-  if (error) { t.done = prev; render(); toast("Not saved — " + error.message, true); }
-  else { t.done_by = done ? (session?.user?.email || "") : ""; render(); toast("Saved"); }
+async function mutate(fn, okMsg){
+  if (busy) return;
+  busy=true; toast("Saving…");
+  try {
+    const { error } = await fn();
+    if (error) throw error;
+    await loadData();
+    if (view.name==="detail") await loadHistory(view.id);
+    else if (view.tab==="history") await loadHistory(null);
+    toast(okMsg||"Saved");
+  } catch(e){
+    toast("Not saved — "+(e.message||e), true);
+  } finally { busy=false; render(); }
 }
 
-async function setDeliv(id, received) {
-  let ref = null;
-  programs.forEach(p => p.program_speakers.forEach(ps =>
-    (ps.deliverables||[]).forEach(d => { if (d.id === id) ref = d; })));
-  if (!ref) return;
-  const prev = ref.received;
-  ref.received = received; render(); toast("Saving…");
-  const { error } = await sb.from("deliverables")
-    .update({ received, received_on: received ? new Date().toISOString().slice(0,10) : null })
-    .eq("id", id);
-  if (error) { ref.received = prev; render(); toast("Not saved — " + error.message, true); }
-  else toast("Saved");
+const setTask  = (id,done)     => mutate(()=>sb.from("tasks").update({done}).eq("id",id));
+const setDeliv = (id,received) => mutate(()=>sb.from("deliverables")
+  .update({received, received_on: received ? new Date().toISOString().slice(0,10) : null}).eq("id",id));
+const setConf  = (id,confirmation) => mutate(()=>sb.from("program_speakers")
+  .update({confirmation, confirmed_on: confirmation==="confirmed" ? new Date().toISOString().slice(0,10) : null})
+  .eq("id",id));
+const removeSpeaker = id => mutate(()=>sb.from("program_speakers").delete().eq("id",id), "Speaker removed");
+
+function slugFor(date,title){
+  const base = date+"-"+String(title).toLowerCase().replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-|-$/g,"").split("-").filter(Boolean).slice(0,4).join("-");
+  const taken = new Set(programs.map(p=>p.slug));
+  if (!taken.has(base)) return base;
+  let i=2; while (taken.has(base+"-"+i)) i++;
+  return base+"-"+i;
 }
 
-/* ---------- events ---------- */
-function wire() {
-  document.getElementById("signout")?.addEventListener("click", async () => {
-    await sb.auth.signOut(); session = null; renderGate();
+async function createProgram(){
+  const date=val("np-date"), title=val("np-title");
+  if (!date || !title) { toast("Date and title are both required", true); return; }
+  await mutate(()=>sb.from("programs").insert({
+    slug: slugFor(date,title), event_date: date, title,
+    description: val("np-desc"), note: val("np-note")
+  }), "Program created with its docket");
+  view = { ...view, creating:false, tab:"upcoming" };
+  render();
+}
+
+async function saveProgram(id){
+  const date=val("ep-date"), title=val("ep-title");
+  if (!date || !title) { toast("Date and title are both required", true); return; }
+  view.edit=false;
+  await mutate(()=>sb.from("programs").update({
+    event_date: date, title, description: val("ep-desc"), note: val("ep-note")
+  }).eq("id",id));
+}
+
+async function saveSpeaker(speakerId, psId){
+  const name=val("es-name");
+  if (!name) { toast("Name cannot be empty", true); return; }
+  const topic=val("es-topic");
+  view.editSpeaker=null;
+  await mutate(async ()=>{
+    const a = await sb.from("speakers").update({
+      full_name:name, preferred_title:val("es-title"), firm:val("es-firm"),
+      email:val("es-email"), phone:val("es-phone"), pronunciation:val("es-say"),
+      headshot_location:val("es-head"), bio_location:val("es-bio")
+    }).eq("id", speakerId);
+    if (a.error) return a;
+    return await sb.from("program_speakers").update({ topic }).eq("id", psId);
   });
-  app.querySelectorAll("[data-open]").forEach(el => el.addEventListener("click", e => {
-    e.stopPropagation();
-    view = { name:"detail", tab:view.tab, id:el.getAttribute("data-open") };
+}
+
+async function addSpeaker(programId){
+  const name=val("add-sp");
+  if (!name) { toast("Type a name first", true); return; }
+  const p = programs.find(x=>x.id===programId);
+  if (p.program_speakers.some(ps=>(ps.speakers?.full_name||"").toLowerCase()===name.toLowerCase())){
+    toast(name+" is already on this program", true); return;
+  }
+  await mutate(async ()=>{
+    let hit = roster.find(r=>r.full_name.toLowerCase()===name.toLowerCase());
+    if (!hit){
+      const ins = await sb.from("speakers").insert({ full_name:name }).select("id, full_name").single();
+      if (ins.error) return ins;
+      hit = ins.data;
+    }
+    return await sb.from("program_speakers").insert({
+      program_id: programId, speaker_id: hit.id,
+      confirmation: "invited", sort_order: p.program_speakers.length
+    });
+  }, "Speaker added with package items");
+}
+
+/* ================= events ================= */
+function wire(){
+  const on=(sel,ev,fn)=>app.querySelectorAll(sel).forEach(el=>el.addEventListener(ev,fn.bind(null,el)));
+
+  document.getElementById("signout")?.addEventListener("click", async ()=>{
+    await sb.auth.signOut(); session=null; renderGate();
+  });
+  document.getElementById("hist-all")?.addEventListener("click", async ()=>{
+    await loadHistory(null);
+    view={ name:"season", tab:"history", id:null, edit:false, editSpeaker:null, creating:false };
     render(); window.scrollTo(0,0);
-  }));
-  app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => {
-    view = { name:"season", tab:el.getAttribute("data-tab"), id:null }; render();
-  }));
-  app.querySelector("[data-back]")?.addEventListener("click", () => {
-    view = { name:"season", tab:view.tab, id:null }; render(); window.scrollTo(0,0);
   });
-  app.querySelectorAll("[data-task]").forEach(el => el.addEventListener("change",
-    () => setTask(el.getAttribute("data-task"), el.checked)));
-  app.querySelectorAll("[data-deliv]").forEach(el => el.addEventListener("change",
-    () => setDeliv(el.getAttribute("data-deliv"), el.checked)));
+
+  on("[data-open]","click",(el,e)=>{ e.stopPropagation();
+    view={ ...view, name:"detail", id:el.getAttribute("data-open"), edit:false, editSpeaker:null };
+    loadHistory(view.id).then(()=>{ render(); window.scrollTo(0,0); }); });
+  on("[data-tab]","click",el=>{
+    view={ ...view, name:"season", tab:el.getAttribute("data-tab"), id:null, creating:false }; render(); });
+  on("[data-back]","click",()=>{
+    view={ ...view, name:"season", id:null, edit:false, editSpeaker:null, creating:false };
+    render(); window.scrollTo(0,0); });
+
+  document.getElementById("new-program")?.addEventListener("click",()=>{
+    view={ ...view, creating:true }; render(); window.scrollTo(0,0); });
+  document.getElementById("np-save")?.addEventListener("click", createProgram);
+
+  document.getElementById("edit-program")?.addEventListener("click",()=>{
+    view={ ...view, edit:true }; render(); window.scrollTo(0,0); });
+  document.getElementById("ep-cancel")?.addEventListener("click",()=>{
+    view={ ...view, edit:false }; render(); });
+  document.getElementById("ep-save")?.addEventListener("click",el=>
+    saveProgram(document.getElementById("ep-save").getAttribute("data-id")));
+
+  document.getElementById("es-cancel")?.addEventListener("click",()=>{
+    view={ ...view, editSpeaker:null }; render(); });
+  document.getElementById("es-save")?.addEventListener("click",()=>{
+    const b=document.getElementById("es-save");
+    saveSpeaker(b.getAttribute("data-sp"), b.getAttribute("data-ps")); });
+
+  document.getElementById("add-sp-btn")?.addEventListener("click",()=>
+    addSpeaker(document.getElementById("add-sp-btn").getAttribute("data-program")));
+  document.getElementById("add-sp")?.addEventListener("keydown",e=>{
+    if (e.key==="Enter"){ e.preventDefault();
+      addSpeaker(document.getElementById("add-sp-btn").getAttribute("data-program")); } });
+
+  on("[data-editsp]","click",el=>{
+    view={ ...view, editSpeaker: el.getAttribute("data-editsp") }; render(); });
+  on("[data-rmsp]","click",el=>{
+    if (confirm("Remove "+el.getAttribute("data-name")+" from this program?\n\nTheir package items go too. The roster record stays."))
+      removeSpeaker(el.getAttribute("data-rmsp")); });
+  on("[data-conf]","change",el=>setConf(el.getAttribute("data-conf"), el.value));
+  on("[data-task]","change",el=>setTask(el.getAttribute("data-task"), el.checked));
+  on("[data-deliv]","change",el=>setDeliv(el.getAttribute("data-deliv"), el.checked));
 }
 
-/* ---------- boot ---------- */
-async function boot() {
+/* ================= boot ================= */
+async function boot(){
   const { data } = await sb.auth.getSession();
-  session = data.session;
+  session=data.session;
   if (!session) { renderGate(); return; }
   try {
     await loadData();
-    if (!programs.length) {
-      app.innerHTML = '<div class="gate"><p class="eyebrow">Signed in as ' +
-        esc(session.user.email) + '</p><h1>No access yet</h1>' +
-        "<p>You're signed in, but this address isn't on the Education Committee list, " +
-        "so there's nothing to show. Ask an administrator to add it.</p>" +
+    if (!programs.length){
+      app.innerHTML='<div class="gate"><p class="eyebrow">Signed in as '+esc(session.user.email)+
+        '</p><h1>No access yet</h1><p>You are signed in, but this address is not on the '+
+        "Education Committee list, so there is nothing to show. Ask an administrator to add it.</p>"+
         '<button class="btn" id="so2">Sign out</button></div>';
-      document.getElementById("so2").addEventListener("click", async () => {
-        await sb.auth.signOut(); session = null; renderGate();
-      });
+      document.getElementById("so2").addEventListener("click", async ()=>{
+        await sb.auth.signOut(); session=null; renderGate(); });
       return;
     }
     render();
-  } catch (e) {
-    app.innerHTML = '<div class="gate"><h1>Could not load</h1><div class="msg err">' +
-      esc(e.message || String(e)) + "</div></div>";
+  } catch(e){
+    app.innerHTML='<div class="gate"><h1>Could not load</h1><div class="msg err">'+
+      esc(e.message||String(e))+"</div></div>";
   }
 }
 
-sb.auth.onAuthStateChange((event) => {
-  if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-    if (!session) boot();
-  }
+sb.auth.onAuthStateChange(ev=>{
+  if ((ev==="SIGNED_IN"||ev==="TOKEN_REFRESHED") && !session) boot();
 });
 boot();
 </script>

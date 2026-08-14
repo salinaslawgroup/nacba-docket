@@ -15,8 +15,9 @@ speaker roster includes federal court and Department of Justice addresses that m
 not be publicly readable.
 
 ```
-index.html        the whole app — no build step, no dependencies to install
-db/01_schema.sql  tables, the docket engine, row-level security
+index.html         the whole app — no build step, no dependencies to install
+db/01_schema.sql   tables, the docket engine, row-level security
+db/03_editing.sql  append-only change history
 ```
 
 `db/02_seed.sql` — the 2026 season — is **git-ignored on purpose**. It carries
@@ -30,7 +31,10 @@ the key.
 ## Setup
 
 **1. Run the SQL.** In the Supabase project's SQL editor, run `db/01_schema.sql`,
-then `db/02_seed.sql`. Both are safe to re-run.
+then `db/02_seed.sql`, then `db/03_editing.sql`. All three are safe to re-run.
+
+Run the history migration *last* — seeding before it is deliberate, so the initial
+import doesn't arrive as 200 log entries.
 
 **2. Add the people who need access.** Nobody sees a single row unless their email is
 in `allowed_emails`:
@@ -86,3 +90,26 @@ works regardless of plan or org membership.
 
 Keeping this in its own Supabase project — never alongside other data — is what makes
 that possible.
+
+## Editing
+
+Everything that changes week to week is editable in the app: a program's title,
+description, date and note; speakers on a program and their confirmation status;
+and the persistent speaker record (firm, email, phone, name pronunciation, and
+where the headshot and bio are filed).
+
+**Moving a date is safe.** Tasks store *offsets*, not dates. Due dates are computed
+from the program's event date, so changing it shifts the whole docket and every
+completed checkbox stays completed.
+
+**Creating a program generates its docket.** Add one with a date and title and its
+16 deadlines appear with it. Adding a speaker generates their five package items.
+
+**Every content edit is logged** — which field, old value, new value, who, when —
+and shown per program and account-wide. The log is append-only: no policy grants
+insert, update, or delete, so it cannot be edited from the app at all. Task
+checkboxes and package items are not logged; they already carry their own stamps,
+and logging them would bury real edits under routine ticking.
+
+Deleting a speaker from a program removes their package items but leaves the roster
+record intact, so their bio and pronunciation survive for the next booking.

@@ -294,7 +294,7 @@ const offLabel = o => o===0 ? "T−0" : (o<0 ? "T−"+Math.abs(o) : "T+"+o);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
-let session=null, programs=[], roster=[], history=[], busy=false;
+let session=null, programs=[], roster=[], history=[], links={}, busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false };
 const app = document.getElementById("app");
 
@@ -322,7 +322,7 @@ function renderGate(msg, kind) {
 
 /* ================= data ================= */
 async function loadData() {
-  const [pRes, sRes] = await Promise.all([
+  const [pRes, sRes, lRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, email, phone, pronunciation,
@@ -330,14 +330,21 @@ async function loadData() {
         deliverables ( id, item, received ) ),
       tasks ( id, offset_days, seq, task, owner_role, source_ref, is_gate, gate_key, done, done_by )`)
       .order("event_date"),
-    sb.from("speakers").select("id, full_name").order("full_name")
+    sb.from("speakers").select("id, full_name").order("full_name"),
+    sb.from("speaker_links")
+      .select("program_speaker_id, token, open_count, last_opened_at, revoked")
   ]);
   if (pRes.error) throw pRes.error;
   programs = (pRes.data||[]).map(p => ({ ...p,
     program_speakers:(p.program_speakers||[]).sort((a,b)=>a.sort_order-b.sort_order),
     tasks:(p.tasks||[]).sort((a,b)=>a.offset_days-b.offset_days||a.seq-b.seq) }));
   roster = sRes.data || [];
+  // 04_speaker_links.sql may not have been run yet — degrade quietly
+  links = {};
+  (lRes.error ? [] : (lRes.data||[])).forEach(l => { links[l.program_speaker_id] = l; });
 }
+
+const speakerUrl = token => new URL("speaker.html", location.href).href + "?k=" + token;
 
 async function loadHistory(programId) {
   let q = sb.from("change_log")
@@ -478,11 +485,22 @@ function renderDetail(){
     const s=ps.speakers||{};
     const meta=[ps.topic,s.preferred_title,s.firm,s.email,
       s.pronunciation?"say: "+s.pronunciation:""].filter(Boolean).join(" · ");
+    const lk=links[ps.id];
+    const linkMeta = lk
+      ? (lk.open_count ? "packet opened "+lk.open_count+"×, last "+
+          FMT_LOG.format(new Date(lk.last_opened_at)) : "packet link sent — not opened yet")
+      : "";
+    const linkBtn = lk
+      ? '<button class="mini" data-copylink="'+esc(lk.token)+'">Copy packet link</button>'
+      : '<button class="mini" data-newlink="'+ps.id+'">Create packet link</button>';
     return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+"</div>"+
-      (meta?'<div class="sp-meta">'+esc(meta)+"</div>":"")+"</div>"+
+      (meta?'<div class="sp-meta">'+esc(meta)+"</div>":"")+
+      (linkMeta?'<div class="sp-meta" style="color:var(--accent)">'+esc(linkMeta)+"</div>":"")+
+      "</div>"+
       '<div class="sp-actions"><select class="conf" data-conf="'+ps.id+'">'+
       CONFIRMATIONS.map(c=>'<option value="'+c+'"'+(ps.confirmation===c?" selected":"")+">"+c+"</option>").join("")+
-      '</select><button class="mini" data-editsp="'+ps.id+'">Edit</button>'+
+      "</select>"+linkBtn+
+      '<button class="mini" data-editsp="'+ps.id+'">Edit</button>'+
       '<button class="mini danger" data-rmsp="'+ps.id+'" data-name="'+esc(s.full_name)+'">Remove</button>'+
       "</div></div>";
   }).join("") : '<p class="empty-note">No speakers named. Every downstream deadline — agreement, bio, headshot, outline, marketing — depends on this.</p>';
@@ -741,6 +759,15 @@ function wire(){
   document.getElementById("add-sp")?.addEventListener("keydown",e=>{
     if (e.key==="Enter"){ e.preventDefault();
       addSpeaker(document.getElementById("add-sp-btn").getAttribute("data-program")); } });
+
+  on("[data-newlink]","click",el=>
+    mutate(()=>sb.from("speaker_links").insert({ program_speaker_id: el.getAttribute("data-newlink") }),
+      "Packet link created — copy it next"));
+  on("[data-copylink]","click",async el=>{
+    const url = speakerUrl(el.getAttribute("data-copylink"));
+    try { await navigator.clipboard.writeText(url); toast("Link copied"); }
+    catch (e) { window.prompt("Copy this link and send it to the speaker:", url); }
+  });
 
   on("[data-editsp]","click",el=>{
     view={ ...view, editSpeaker: el.getAttribute("data-editsp") }; render(); });

@@ -113,3 +113,23 @@ and logging them would bury real edits under routine ticking.
 
 Deleting a speaker from a program removes their package items but leaves the roster
 record intact, so their bio and pronunciation survive for the next booking.
+
+## Speaker packet pages
+
+Speakers are not staff and are never on the allowlist, so they cannot sign in.
+Each speaker instead gets an unguessable link to `speaker.html?k=<token>` showing
+their own program: what is due, on which calendar dates, what NACBA has already
+received, and a download for every template.
+
+The link grants **no table access**. Anonymous visitors have no RLS policy on any
+table and can read nothing at all. Their entire surface is one security-definer
+function, `speaker_packet(token)`, which returns that one speaker's row and records
+the visit. Co-speakers appear by name only — never their contact details — and the
+internal note and staff docket are not exposed.
+
+Staff create and copy a link from the speaker's row on the program page, and see
+whether it has been opened and how often. Setting `revoked = true` on a row in
+`speaker_links` kills that link immediately.
+
+`templates/` holds the six packet documents. They are blank templates containing no
+speaker data, which is why they can live in a public repository.

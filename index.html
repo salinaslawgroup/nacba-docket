@@ -4,42 +4,55 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="theme-color" content="#0B243A">
 <title>NACBA Webinar Docket</title>
 <style>
+  /* NACBA brand — sampled from the logo files.
+     navy #0B243A · mid blue #4F98CA · light blue #BADEF6
+     --accent is the brand blue darkened to #1D6091 so small text on white
+     clears WCAG AA; --brand keeps the true #4F98CA for bars and fills. */
   :root {
-    --ground:#F2F3F5; --surface:#FFF; --surface-2:#F7F8F9;
-    --ink:#171A20; --muted:#59616E; --faint:#858D9A;
-    --accent:#1B4E5C; --accent-soft:#E4EDEF;
-    --critical:#9E2A33; --critical-soft:#F7E8E9;
+    --ground:#F0F3F6; --surface:#FFF; --surface-2:#F6F8FA;
+    --ink:#0B243A; --muted:#52657A; --faint:#8497A9;
+    --accent:#1D6091; --brand:#4F98CA; --accent-soft:#E4F0F9;
+    --critical:#9E2A33; --critical-soft:#F8E9EA;
     --warn:#8A6210; --warn-soft:#F8F0DE;
     --ok:#2A6650; --ok-soft:#E3F0EA;
-    --rule:#DBDEE3; --rule-strong:#C3C8D0;
-    --shadow:0 1px 2px rgba(23,26,32,.05);
+    --rule:#D9E0E7; --rule-strong:#BECAD5;
+    --shadow:0 1px 2px rgba(11,36,58,.06);
   }
   @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --ground:#0F1216; --surface:#171B21; --surface-2:#1C2129;
-    --ink:#E5E8ED; --muted:#98A0AD; --faint:#767E8B;
-    --accent:#6FB3C4; --accent-soft:#17323A;
-    --critical:#E08187; --critical-soft:#351D1F;
-    --warn:#D6AB5C; --warn-soft:#322715;
-    --ok:#6FBF9C; --ok-soft:#163026;
-    --rule:#2A313B; --rule-strong:#3A424E;
-    --shadow:0 1px 2px rgba(0,0,0,.3);
+    --ground:#0A1621; --surface:#0F2130; --surface-2:#152B3C;
+    --ink:#E4EDF4; --muted:#9BB0C2; --faint:#7A8FA1;
+    --accent:#7FB6DC; --brand:#4F98CA; --accent-soft:#123048;
+    --critical:#E58B90; --critical-soft:#3A1E21;
+    --warn:#D6AB5C; --warn-soft:#332815;
+    --ok:#6FBF9C; --ok-soft:#15302A;
+    --rule:#22384A; --rule-strong:#334C60;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
   }}
   :root[data-theme="dark"]{
-    --ground:#0F1216; --surface:#171B21; --surface-2:#1C2129;
-    --ink:#E5E8ED; --muted:#98A0AD; --faint:#767E8B;
-    --accent:#6FB3C4; --accent-soft:#17323A;
-    --critical:#E08187; --critical-soft:#351D1F;
-    --warn:#D6AB5C; --warn-soft:#322715;
-    --ok:#6FBF9C; --ok-soft:#163026;
-    --rule:#2A313B; --rule-strong:#3A424E;
-    --shadow:0 1px 2px rgba(0,0,0,.3);
+    --ground:#0A1621; --surface:#0F2130; --surface-2:#152B3C;
+    --ink:#E4EDF4; --muted:#9BB0C2; --faint:#7A8FA1;
+    --accent:#7FB6DC; --brand:#4F98CA; --accent-soft:#123048;
+    --critical:#E58B90; --critical-soft:#3A1E21;
+    --warn:#D6AB5C; --warn-soft:#332815;
+    --ok:#6FBF9C; --ok-soft:#15302A;
+    --rule:#22384A; --rule-strong:#334C60;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
   body{background:var(--ground);color:var(--ink);
-    font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     font-size:16px;line-height:1.55;margin:0;padding:0 1.5rem 5rem;-webkit-font-smoothing:antialiased}
+
+  /* The logo is never recolored. It sits on its own white plate so it
+     reads correctly on both the light ground and the dark one. */
+  .logo-plate{display:inline-block;background:#FFF;padding:.4rem .55rem;border-radius:3px;
+    line-height:0;margin:0 0 .9rem;border:1px solid var(--brand)}
+  .logo-plate img{display:block;width:200px;height:auto}
+  @media (max-width:34rem){.logo-plate img{width:160px}}
   .wrap{max-width:64rem;margin:0 auto}
   button{font:inherit;color:inherit;cursor:pointer}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -288,7 +301,9 @@ const app = document.getElementById("app");
 /* ================= sign in ================= */
 function renderGate(msg, kind) {
   app.innerHTML =
-    '<div class="gate"><p class="eyebrow">NACBA · Education Committee</p><h1>Webinar Docket</h1>' +
+    '<div class="gate"><span class="logo-plate"><img src="assets/nacba-logo.png" ' +
+    'alt="National Association of Consumer Bankruptcy Attorneys" width="200" height="35"></span>' +
+    '<p class="eyebrow">Education Committee</p><h1>Webinar Docket</h1>' +
     "<p>Enter your work email and we'll send you a sign-in link. No password to remember.</p>" +
     '<form id="signin"><input type="email" id="email" placeholder="you@example.com" required autocomplete="email">' +
     '<button type="submit">Send sign-in link</button></form>' +
@@ -367,7 +382,10 @@ function alertsFor(p){
 function render(){ app.innerHTML = view.name==="detail" ? renderDetail() : renderSeason(); wire(); }
 
 function chrome(inner){
-  return '<header class="masthead"><div><p class="eyebrow">NACBA · Education Committee</p>' +
+  return '<header class="masthead"><div><span class="logo-plate">' +
+    '<img src="assets/nacba-logo.png" alt="National Association of Consumer ' +
+    'Bankruptcy Attorneys" width="200" height="35"></span>' +
+    '<p class="eyebrow">Education Committee</p>' +
     "<h1>Webinar Docket</h1></div><div class=\"masthead-right\">" +
     '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
     esc(session?.user?.email||"") + '</span><div class="btn-row">' +

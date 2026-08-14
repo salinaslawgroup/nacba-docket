@@ -1,0 +1,7 @@
+# Seed data contains speaker contact details (including federal court and
+# DOJ addresses). It is applied directly in Supabase and must never be
+# committed to a public repository.
+db/02_seed.sql
+
+*.csv
+.DS_Store

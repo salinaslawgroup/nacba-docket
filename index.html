@@ -93,6 +93,18 @@
   .mini.danger:hover{color:var(--critical)}
   a.mini{text-decoration:none;white-space:nowrap;align-self:center}
 
+  /* category chips — click to toggle */
+  .chips{display:flex;flex-wrap:wrap;gap:.35rem}
+  .chip-t{background:var(--surface-2);border:1px solid var(--rule);border-radius:100px;
+    padding:.25rem .7rem;font-size:.82rem;color:var(--muted);cursor:pointer;line-height:1.4}
+  .chip-t:hover{border-color:var(--accent);color:var(--accent)}
+  .chip-t.is-on{background:var(--accent-soft);border-color:var(--brand);color:var(--accent);
+    font-weight:600}
+  .cat-tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.1rem}
+  .cat-tag{background:var(--accent-soft);color:var(--accent);border-radius:100px;
+    padding:.12rem .55rem;font-size:.74rem;font-weight:600;white-space:nowrap}
+  .cat-filter{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 1.25rem}
+
   /* ---- alerts ---- */
   .alerts{margin-bottom:2rem}
   .alerts-head{font-size:.84rem;font-weight:600;color:var(--critical);margin:0 0 .6rem}
@@ -266,6 +278,16 @@ const GATE_LABELS = [
   { key:"runofshow", label:"Run of show" }
 ];
 const CONFIRMATIONS = ["invited","asked","confirmed","declined"];
+const SPEAKER_TYPES = [
+  { id:"",                    label:"— not recorded —" },
+  { id:"debtor_attorney",     label:"Debtor's attorney" },
+  { id:"non_debtor_attorney", label:"Non-debtor attorney" },
+  { id:"trustee",             label:"Trustee (7 or 13)" },
+  { id:"judge",               label:"Judge" },
+  { id:"paralegal",           label:"Paralegal" },
+  { id:"other",               label:"Other professional" }
+];
+const typeLabel = id => (SPEAKER_TYPES.find(t => t.id === (id||"")) || {}).label || "";
 const FIELD_NAMES = {
   title:"title", description:"description", event_date:"date", note:"note",
   confirmation:"confirmation", topic:"topic", full_name:"name", email:"email",
@@ -288,8 +310,9 @@ const offLabel = o => o===0 ? "T−0" : (o<0 ? "T−"+Math.abs(o) : "T+"+o);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
-let session=null, programs=[], roster=[], history=[], links={}, uploads={}, busy=false;
-let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false };
+let session=null, programs=[], roster=[], history=[], links={}, uploads={},
+    categories=[], progCats={}, spkCats={}, busy=false;
+let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false, cat:null };
 const app = document.getElementById("app");
 
 /* ================= sign in ================= */
@@ -316,11 +339,11 @@ function renderGate(msg, kind) {
 
 /* ================= data ================= */
 async function loadData() {
-  const [pRes, sRes, lRes, uRes] = await Promise.all([
+  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, email, phone, pronunciation,
-                   headshot_location, bio_location ),
+                   headshot_location, bio_location, speaker_type ),
         deliverables ( id, item, received ) ),
       tasks ( id, offset_days, seq, task, owner_role, source_ref, is_gate, gate_key, done, done_by )`)
       .order("event_date"),
@@ -329,7 +352,11 @@ async function loadData() {
       .select("program_speaker_id, token, open_count, last_opened_at, revoked"),
     sb.from("speaker_uploads")
       .select("id, program_speaker_id, kind, filename, size_bytes, uploaded_at")
-      .order("uploaded_at", { ascending: false })
+      .order("uploaded_at", { ascending: false }),
+    sb.from("categories").select("id, name, sort_order, active")
+      .eq("active", true).order("sort_order"),
+    sb.from("program_categories").select("program_id, category_id"),
+    sb.from("speaker_categories").select("speaker_id, category_id")
   ]);
   if (pRes.error) throw pRes.error;
   programs = (pRes.data||[]).map(p => ({ ...p,
@@ -343,6 +370,30 @@ async function loadData() {
   (uRes.error ? [] : (uRes.data||[])).forEach(u => {
     (uploads[u.program_speaker_id] = uploads[u.program_speaker_id] || []).push(u);
   });
+  categories = cRes.error ? [] : (cRes.data || []);
+  progCats = {}; spkCats = {};
+  (pcRes.error ? [] : (pcRes.data||[])).forEach(r => {
+    (progCats[r.program_id] = progCats[r.program_id] || []).push(r.category_id); });
+  (scRes.error ? [] : (scRes.data||[])).forEach(r => {
+    (spkCats[r.speaker_id] = spkCats[r.speaker_id] || []).push(r.category_id); });
+}
+
+const catName = id => (categories.find(c => c.id === id) || {}).name || "";
+
+/* Toggle chips. `owner` is the program or speaker id, `on` the ids already set. */
+function catChips(kind, owner, on) {
+  return '<div class="chips">' + categories.map(c =>
+    '<button class="chip-t' + (on.includes(c.id) ? " is-on" : "") +
+    '" data-cat="' + kind + '" data-owner="' + owner + '" data-id="' + c.id + '">' +
+    esc(c.name) + "</button>").join("") + "</div>";
+}
+
+async function toggleCat(kind, owner, id, isOn) {
+  const table = kind === "program" ? "program_categories" : "speaker_categories";
+  const col   = kind === "program" ? "program_id" : "speaker_id";
+  await mutate(() => isOn
+    ? sb.from(table).delete().eq(col, owner).eq("category_id", id)
+    : sb.from(table).insert({ [col]: owner, category_id: id }));
 }
 
 const kb = n => n >= 1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB";
@@ -490,6 +541,7 @@ function renderSeason(){
 
   const upcoming=programs.filter(p=>!isPast(p)), past=programs.filter(isPast);
   const list = view.tab==="upcoming" ? upcoming : (view.tab==="past" ? past : programs);
+  const shown = view.cat ? list.filter(p => (progCats[p.id]||[]).includes(view.cat)) : list;
 
   const rows = upcoming.map(p=>{
     const a=alertsFor(p); if(!a.length) return "";
@@ -504,11 +556,18 @@ function renderSeason(){
   const tab=(id,label,n)=>'<button class="tab" role="tab" data-tab="'+id+'" aria-selected="'+
     (view.tab===id)+'">'+label+'<span class="count">'+n+"</span></button>";
 
+  const filter = categories.length
+    ? '<div class="cat-filter">' + categories.map(c =>
+        '<button class="chip-t'+(view.cat===c.id?" is-on":"")+'" data-catfilter="'+c.id+'">'+
+        esc(c.name)+"</button>").join("") +
+      (view.cat ? '<button class="chip-t" data-catfilter="">Clear</button>' : "") + "</div>"
+    : "";
+
   return chrome(alerts + '<div class="tabs" role="tablist">' +
     tab("upcoming","Upcoming",upcoming.length)+tab("past","Completed",past.length)+
     tab("all","All",programs.length)+'<span class="spacer"></span>'+
-    '<button class="btn primary" id="new-program">+ New program</button></div>' +
-    '<div class="grid">'+list.map(card).join("")+"</div>");
+    '<button class="btn primary" id="new-program">+ New program</button></div>' + filter +
+    '<div class="grid">'+shown.map(card).join("")+"</div>");
 }
 
 function card(p){
@@ -565,7 +624,7 @@ function renderDetail(){
   const spRows = p.program_speakers.length ? p.program_speakers.map(ps=>{
     if (view.editSpeaker===ps.id) return editSpeakerForm(ps);
     const s=ps.speakers||{};
-    const meta=[ps.topic,s.preferred_title,s.firm,s.email,
+    const meta=[ps.topic,typeLabel(s.speaker_type),s.preferred_title,s.firm,s.email,
       s.pronunciation?"say: "+s.pronunciation:""].filter(Boolean).join(" · ");
     const lk=links[ps.id];
     const linkMeta = lk
@@ -626,6 +685,12 @@ function renderDetail(){
       '</td><td class="c-owner">'+esc(t.owner_role)+'</td><td class="c-src">'+esc(t.source_ref)+
       '</td><td class="c-by">'+esc((t.done_by||"").split("@")[0])+"</td></tr>";
   }).join("");
+  const catPanel = categories.length
+    ? '<section class="panel"><p class="panel-head"><span>Categories</span>' +
+      '<span>click to tag</span></p>' +
+      catChips("program", p.id, progCats[p.id] || []) + "</section>"
+    : "";
+
   /* what speakers have sent in */
   const inbox = p.program_speakers.flatMap(ps =>
     (uploads[ps.id]||[]).map(u => ({ ...u, who: ps.speakers?.full_name || "" })));
@@ -647,7 +712,7 @@ function renderDetail(){
     "</tbody></table></div></section>";
 
   return chrome('<button class="back" data-back>← All programs</button>'+head+
-    speakersPanel+pkgPanel+inboxPanel+docket+historyPanel(p.id));
+    catPanel+speakersPanel+pkgPanel+inboxPanel+docket+historyPanel(p.id));
 }
 
 function editProgramForm(p){
@@ -681,6 +746,10 @@ function editSpeakerForm(ps){
     '<div class="form-row">'+
     '<div class="field"><label class="field-label" for="es-phone">Phone</label>'+
     '<input type="text" id="es-phone" value="'+esc(s.phone)+'"></div>'+
+    '<div class="field"><label class="field-label" for="es-type">Speaker type</label>'+
+    '<select id="es-type">'+SPEAKER_TYPES.map(t=>'<option value="'+t.id+'"'+
+      ((s.speaker_type||"")===t.id?" selected":"")+">"+esc(t.label)+"</option>").join("")+
+    "</select></div>"+
     '<div class="field"><label class="field-label" for="es-say">Name pronunciation</label>'+
     '<input type="text" id="es-say" value="'+esc(s.pronunciation)+'" placeholder="MAG-duh-leen"></div></div>'+
     '<div class="form-row">'+
@@ -690,6 +759,8 @@ function editSpeakerForm(ps){
     '<input type="text" id="es-bio" value="'+esc(s.bio_location)+'"></div></div>'+
     '<div class="field"><label class="field-label" for="es-topic">Topic on this program</label>'+
     '<input type="text" id="es-topic" value="'+esc(ps.topic)+'"></div>'+
+    '<div class="field"><span class="field-label">What they can speak on</span>'+
+    catChips("speaker", s.id, spkCats[s.id]||[])+"</div>"+
     '<div class="form-actions"><button class="btn primary" id="es-save" data-sp="'+s.id+
     '" data-ps="'+ps.id+'">Save speaker</button>'+
     '<button class="btn" id="es-cancel">Cancel</button></div></div></div>';
@@ -785,6 +856,7 @@ async function saveSpeaker(speakerId, psId){
     const a = await sb.from("speakers").update({
       full_name:name, preferred_title:val("es-title"), firm:val("es-firm"),
       email:val("es-email"), phone:val("es-phone"), pronunciation:val("es-say"),
+      speaker_type: val("es-type") || null,
       headshot_location:val("es-head"), bio_location:val("es-bio")
     }).eq("id", speakerId);
     if (a.error) return a;
@@ -873,6 +945,12 @@ function wire(){
     try { await navigator.clipboard.writeText(body); toast("Invitation email copied"); }
     catch (e) { window.prompt("Copy this email:", body); }
   });
+
+  on("[data-cat]","click",el=>toggleCat(
+    el.getAttribute("data-cat"), el.getAttribute("data-owner"),
+    el.getAttribute("data-id"), el.classList.contains("is-on")));
+  on("[data-catfilter]","click",el=>{
+    view={ ...view, cat: el.getAttribute("data-catfilter") || null }; render(); });
 
   on("[data-dl]","click",el=>
     downloadUpload(el.getAttribute("data-dl"), el.getAttribute("data-fn")));

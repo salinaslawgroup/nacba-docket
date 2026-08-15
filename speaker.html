@@ -119,6 +119,48 @@
   .foot{font-size:.72rem;letter-spacing:.04em;color:var(--faint);line-height:1.7}
   .foot a{color:var(--accent)}
 
+  .dl-item.sent .dot{background:var(--brand)}
+  .st-sent{background:var(--accent-soft);color:var(--accent)}
+  .inline-tpl,.inline-up{font-family:ui-monospace,Menlo,monospace;font-size:.68rem;
+    letter-spacing:.03em;color:var(--accent);text-decoration:none;white-space:nowrap;
+    background:none;border:none;padding:0 0 0 .5rem;cursor:pointer}
+  .inline-tpl:hover,.inline-up:hover{text-decoration:underline}
+
+  /* co-panelists */
+  .co-row{padding:.7rem 0;border-top:1px solid var(--rule)}
+  .co-row:first-child{border-top:none;padding-top:0}
+  .co-name{font-weight:600;font-size:.98rem}
+  .co-meta{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;color:var(--muted);
+    margin-top:.15rem;word-break:break-word}
+  .co-meta a{color:var(--accent)}
+
+  /* uploads */
+  .up-form{display:grid;gap:.45rem}
+  .up-label{font-family:ui-monospace,Menlo,monospace;font-size:.6rem;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--faint);margin-top:.4rem}
+  .up-form select,.up-form input[type=file]{font:inherit;font-size:.92rem;padding:.5rem .6rem;
+    border:1px solid var(--rule-strong);border-radius:3px;background:var(--surface-2);
+    color:var(--ink);width:100%}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#FFF;margin-top:.7rem;
+    justify-self:start;padding:.55rem 1rem}
+  .btn.primary:disabled{opacity:.55;cursor:default}
+  .up-status{font-size:.87rem;margin:.6rem 0 0;min-height:1.2em;color:var(--muted)}
+  .up-status.ok{color:var(--ok)}
+  .up-status.err{color:var(--critical)}
+  .up-sent{margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--rule)}
+  .up-head{font-family:ui-monospace,Menlo,monospace;font-size:.6rem;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 .6rem}
+  .up-row{display:grid;grid-template-columns:auto 1fr auto;gap:.2rem .8rem;padding:.45rem 0;
+    border-top:1px solid var(--rule);align-items:baseline;font-size:.88rem}
+  .up-row:first-child{border-top:none;padding-top:0}
+  .up-kind{font-family:ui-monospace,Menlo,monospace;font-size:.58rem;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
+    padding:.2rem .4rem;border-radius:2px;white-space:nowrap}
+  .up-file{word-break:break-word}
+  .up-meta{font-family:ui-monospace,Menlo,monospace;font-size:.7rem;color:var(--faint);
+    white-space:nowrap;text-align:right}
+  .up-empty{color:var(--faint);font-size:.9rem;margin:0}
+
   ul.plain{margin:0;padding-left:1.15rem}
   ul.plain li{margin-bottom:.5rem;font-size:.93rem}
   ul.plain li:last-child{margin-bottom:0}
@@ -154,7 +196,9 @@
     @page{margin:14mm}
     body{background:#FFF;font-size:10.5pt;padding:0}
     .wrap{max-width:none}
-    .actions,.file .arrow{display:none}
+    .actions,.file .arrow,.inline-up,#upload .up-form{display:none}
+    .up-row{page-break-inside:avoid}
+    @page{margin:14mm}
     header{padding-top:0;page-break-after:avoid}
     h1{font-size:19pt}
     h2{font-size:12.5pt;page-break-after:avoid}
@@ -200,21 +244,35 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 
 /* The speaker-facing slice of the docket. Offsets match db/01_schema.sql. */
 const MILESTONES = [
-  { off:-35, name:"Signed Speaker Agreement",  items:["agreement"],
+  { off:-35, name:"Signed Speaker Agreement",  items:["agreement"], up:"other",
+    tpl:"4. Speaker Agreement.docx", tplLabel:"Agreement",
     note:"Needed before NACBA can publish any marketing for the program." },
-  { off:-21, name:"Biography and headshot",    items:["bio","headshot"],
+  { off:-21, name:"Biography and headshot",    items:["bio","headshot"], up:"bio",
+    tpl:"2. Speaker Biography Template.docx", tplLabel:"Bio template",
     note:"Bio on the NACBA template. Headshot as a separate high-resolution file." },
-  { off:-14, name:"Written materials — due",   items:["outline"],
+  { off:-14, name:"Written materials — due",   items:["outline"], up:"outline",
+    tpl:"3. Webinar Outline Template.docx", tplLabel:"Outline template",
     note:"Your branded outline. This is the target date, which leaves room for a revision." },
   { off: -7, name:"Written materials — final", items:[],
     note:"Set by CLE filing requirements. This one cannot move." },
-  { off:-14, name:"PowerPoint — due",          items:["powerpoint"],
+  { off:-14, name:"PowerPoint — due",          items:["powerpoint"], up:"powerpoint",
+    tpl:"6. NACBA PowerPoint Template.pptx", tplLabel:"PowerPoint template",
     note:"Optional, but encouraged. NACBA template provided, or your own carrying our logo." },
   { off: -1, name:"Technology check",          items:[],
     note:"Microphone, camera, lighting, connection, and a professional background." },
   { off:  0, name:"Your webinar",              items:[],
     note:"Please join 30 minutes early. Staff will admit you for a final check." }
 ];
+
+const UPLOAD_KINDS = [
+  { id:"bio",        label:"Biography" },
+  { id:"headshot",   label:"Headshot" },
+  { id:"outline",    label:"Written materials / outline" },
+  { id:"powerpoint", label:"PowerPoint" },
+  { id:"other",      label:"Signed agreement or something else" }
+];
+const MAX_BYTES = 10 * 1024 * 1024;
+const kb = n => n >= 1048576 ? (n/1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n/1024)) + " KB";
 
 const TEMPLATES = [
   { file:"2. Speaker Biography Template.docx", ext:"DOCX",
@@ -252,30 +310,80 @@ function render(d) {
     .sort((a,b) => a.due - b.due || a.off - b.off)
     .map(m => {
       const done = m.items.length > 0 && m.items.every(i => recv[i]?.received);
-      const overdue = !done && m.due < today && m.items.length > 0;
+      const sent = !done && m.up && (d.uploads||[]).some(u => u.kind === m.up);
+      const overdue = !done && !sent && m.due < today && m.items.length > 0;
       const soon = !done && !overdue && diffDays(today, m.due) <= 7 && m.due >= today;
-      const cls = done ? "done" : (overdue ? "late" : (soon ? "soon" : ""));
+      const cls = done ? "done" : (sent ? "sent" : (overdue ? "late" : (soon ? "soon" : "")));
       const badge = m.items.length
         ? (done ? '<span class="status st-ok">received</span>'
-                : '<span class="status st-wait">awaiting</span>')
+          : sent ? '<span class="status st-sent">you sent this</span>'
+                 : '<span class="status st-wait">awaiting</span>')
         : "";
       const rel = m.due < today
         ? Math.abs(diffDays(today, m.due)) + " days ago"
         : (diffDays(today, m.due) === 0 ? "today" : "in " + diffDays(today, m.due) + " days");
+      const tpl = m.tpl
+        ? ' <a class="inline-tpl" href="templates/' + encodeURIComponent(m.tpl) +
+          '" download>↓ ' + esc(m.tplLabel) + "</a>" : "";
+      const up = m.up
+        ? ' <button class="inline-up" data-jump="' + esc(m.up) + '">↑ Upload</button>' : "";
       return '<div class="dl-item ' + cls + '"><span class="dot"></span>' +
         '<span class="dl-name">' + esc(m.name) + badge + "</span>" +
         '<span class="dl-date">' + esc(FMT_DATE.format(m.due)) + "<br>" + esc(rel) + "</span>" +
-        '<span class="dl-note">' + esc(m.note) + "</span></div>";
+        '<span class="dl-note">' + esc(m.note) + tpl + up + "</span></div>";
     }).join("");
+
+  /* co-panelists */
+  const co = (d.co_speakers || []);
+  const coPanel = co.length
+    ? "<section><h2>Your co-panelists</h2>" +
+      '<p class="sub">Please reach out directly to plan the session — NACBA does not ' +
+      "schedule your planning call.</p><div class=\"panel\">" +
+      co.map(c => {
+        const bits = [c.preferred_title, c.firm].filter(Boolean).join(" · ");
+        const contact = [
+          c.email ? '<a href="mailto:' + esc(c.email) + '">' + esc(c.email) + "</a>" : "",
+          c.phone ? esc(c.phone) : ""
+        ].filter(Boolean).join(" · ");
+        return '<div class="co-row"><div><div class="co-name">' + esc(c.full_name) +
+          (c.confirmed ? "" : '<span class="status st-wait">not yet confirmed</span>') + "</div>" +
+          (bits ? '<div class="co-meta">' + esc(bits) + "</div>" : "") +
+          (c.topic ? '<div class="co-meta">Topic: ' + esc(c.topic) + "</div>" : "") +
+          (contact ? '<div class="co-meta">' + contact + "</div>" : "") +
+          "</div></div>";
+      }).join("") + "</div></section>"
+    : "";
+
+  /* uploads */
+  const mine = d.uploads || [];
+  const kindLabel = k => (UPLOAD_KINDS.find(x => x.id === k) || {}).label || k;
+  const sentList = mine.length
+    ? mine.map(u => '<div class="up-row"><span class="up-kind">' + esc(kindLabel(u.kind)) +
+        '</span><span class="up-file">' + esc(u.filename) + '</span>' +
+        '<span class="up-meta">' + esc(kb(u.size_bytes)) + " · " +
+        esc(FMT_DATE.format(new Date(u.uploaded_at))) + "</span></div>").join("")
+    : '<p class="up-empty">Nothing sent yet.</p>';
+
+  const uploadPanel =
+    "<section id=\"upload\"><h2>Send us your materials</h2>" +
+    '<p class="sub">Upload here and it reaches your coordinator directly. Up to 10 MB per file. ' +
+    "You can send the same thing again if you need to replace it.</p>" +
+    '<div class="panel"><div class="up-form">' +
+    '<label class="up-label" for="up-kind">What is this?</label>' +
+    '<select id="up-kind">' + UPLOAD_KINDS.map(k =>
+      '<option value="' + k.id + '">' + esc(k.label) + "</option>").join("") + "</select>" +
+    '<label class="up-label" for="up-file">Choose a file</label>' +
+    '<input type="file" id="up-file">' +
+    '<button class="btn primary" id="up-go">Upload</button>' +
+    '<p class="up-status" id="up-status"></p>' +
+    '</div><div class="up-sent"><p class="up-head">What you have sent</p>' +
+    '<div id="up-list">' + sentList + "</div></div></div></section>";
 
   const files = TEMPLATES.map(t =>
     '<a class="file" href="templates/' + encodeURIComponent(t.file) + '" download>' +
     '<span class="ext">' + t.ext + '</span><span><span class="fname">' + esc(t.name) +
     '</span><br><span class="fdesc">' + esc(t.desc) + "</span></span>" +
     '<span class="arrow">↓</span></a>').join("");
-
-  const co = (d.co_speakers||[]).length
-    ? "<dt>With</dt><dd>" + d.co_speakers.map(esc).join("<br>") + "</dd>" : "";
 
   const late = MILESTONES.some(m =>
     m.items.length && addDays(ev, m.off) < today && !m.items.every(i => recv[i]?.received));
@@ -303,6 +411,8 @@ function render(d) {
     "<p>Written materials are final one week before the webinar. That deadline is set by " +
     "continuing legal education filing requirements, not by NACBA. Materials arriving after it " +
     "may prevent the program being accredited in every state where we have applied.</p></div>" +
+
+    uploadPanel + coPanel +
 
     "<section><h2>Your templates</h2>" +
     '<p class="sub">Please use these — consistent materials are how NACBA keeps a professional ' +
@@ -364,7 +474,7 @@ function render(d) {
     (d.speaker.firm ? "<dt>Firm</dt><dd>" + esc(d.speaker.firm) + "</dd>" : "") +
     (d.speaker.email ? "<dt>Email</dt><dd>" + esc(d.speaker.email) + "</dd>" : "") +
     (d.speaker.pronunciation ? "<dt>Say</dt><dd>" + esc(d.speaker.pronunciation) + "</dd>" : "") +
-    co + "</dl></div>" +
+    "</dl></div>" +
     '<p class="sub" style="margin-top:.8rem">Anything wrong or missing — especially how your ' +
     "name should be pronounced — please tell your coordinator. This is what we use to introduce " +
     "you on air.</p></section>" +
@@ -379,16 +489,74 @@ function render(d) {
     esc(FMT_DATE.format(todayUTC())) + "</span></p></footer>";
 
   document.getElementById("print")?.addEventListener("click", () => window.print());
+
+  /* jump from a deadline row straight into the uploader, preselected */
+  document.querySelectorAll("[data-jump]").forEach(el =>
+    el.addEventListener("click", () => {
+      const sel = document.getElementById("up-kind");
+      if (sel) sel.value = el.getAttribute("data-jump");
+      document.getElementById("upload")?.scrollIntoView({ behavior:"smooth", block:"start" });
+      document.getElementById("up-file")?.focus();
+    }));
+
+  /* upload */
+  const go = document.getElementById("up-go");
+  go?.addEventListener("click", async () => {
+    const input = document.getElementById("up-file");
+    const status = document.getElementById("up-status");
+    const file = input.files && input.files[0];
+    const say = (msg, cls) => { status.textContent = msg; status.className = "up-status " + (cls||""); };
+
+    if (!file) { say("Choose a file first.", "err"); return; }
+    if (file.size === 0) { say("That file is empty.", "err"); return; }
+    if (file.size > MAX_BYTES) {
+      say("That file is " + kb(file.size) + ". The limit is 10 MB — please email it to your coordinator instead.", "err");
+      return;
+    }
+
+    go.disabled = true; say("Uploading " + file.name + "…");
+    try {
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res(String(r.result).split(",")[1] || "");
+        r.onerror = () => rej(new Error("read failed"));
+        r.readAsDataURL(file);
+      });
+      const { data: res, error } = await sb.rpc("speaker_upload", {
+        tok, kind: document.getElementById("up-kind").value,
+        filename: file.name, mime: file.type || "", b64
+      });
+      if (error)      { say("That didn't send. Please try again, or email your coordinator.", "err"); }
+      else if (!res?.ok) { say(res?.error || "That didn't send.", "err"); }
+      else {
+        packet.uploads = [res.upload, ...(packet.uploads || [])];
+        say("Sent — thank you. " + file.name + " reached your coordinator.", "ok");
+        input.value = "";
+        const keep = status.textContent, cls = status.className;
+        render(packet);                       // refresh badges and the sent list
+        const s2 = document.getElementById("up-status");
+        if (s2) { s2.textContent = keep; s2.className = cls; }
+      }
+    } catch (e) {
+      say("That file couldn't be read. Please try a different one.", "err");
+    } finally {
+      const b = document.getElementById("up-go");
+      if (b) b.disabled = false;
+    }
+  });
 }
 
+let tok = "", packet = null;
+
 (async function () {
-  const tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");
+  tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");
   if (!tok) { notFound("This page needs the full link from your invitation email."); return; }
   try {
     const { data, error } = await sb.rpc("speaker_packet", { tok });
     if (error) { notFound("We couldn't load your packet just now."); return; }
     if (!data)  { notFound("This link is no longer active."); return; }
-    render(data);
+    packet = data;
+    render(packet);
   } catch (e) {
     notFound("We couldn't load your packet just now.");
   }

@@ -295,7 +295,7 @@ const offLabel = o => o===0 ? "T−0" : (o<0 ? "T−"+Math.abs(o) : "T+"+o);
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
-let session=null, programs=[], roster=[], history=[], links={}, busy=false;
+let session=null, programs=[], roster=[], history=[], links={}, uploads={}, busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false };
 const app = document.getElementById("app");
 
@@ -323,7 +323,7 @@ function renderGate(msg, kind) {
 
 /* ================= data ================= */
 async function loadData() {
-  const [pRes, sRes, lRes] = await Promise.all([
+  const [pRes, sRes, lRes, uRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, email, phone, pronunciation,
@@ -333,16 +333,42 @@ async function loadData() {
       .order("event_date"),
     sb.from("speakers").select("id, full_name").order("full_name"),
     sb.from("speaker_links")
-      .select("program_speaker_id, token, open_count, last_opened_at, revoked")
+      .select("program_speaker_id, token, open_count, last_opened_at, revoked"),
+    sb.from("speaker_uploads")
+      .select("id, program_speaker_id, kind, filename, size_bytes, uploaded_at")
+      .order("uploaded_at", { ascending: false })
   ]);
   if (pRes.error) throw pRes.error;
   programs = (pRes.data||[]).map(p => ({ ...p,
     program_speakers:(p.program_speakers||[]).sort((a,b)=>a.sort_order-b.sort_order),
     tasks:(p.tasks||[]).sort((a,b)=>a.offset_days-b.offset_days||a.seq-b.seq) }));
   roster = sRes.data || [];
-  // 04_speaker_links.sql may not have been run yet — degrade quietly
+  // 04 / 05 may not have been run yet — degrade quietly rather than error
   links = {};
   (lRes.error ? [] : (lRes.data||[])).forEach(l => { links[l.program_speaker_id] = l; });
+  uploads = {};
+  (uRes.error ? [] : (uRes.data||[])).forEach(u => {
+    (uploads[u.program_speaker_id] = uploads[u.program_speaker_id] || []).push(u);
+  });
+}
+
+const kb = n => n >= 1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB";
+
+async function downloadUpload(id, fallbackName) {
+  toast("Fetching…");
+  const { data, error } = await sb.rpc("upload_bytes", { uid: id });
+  if (error || !data) { toast("Could not fetch that file", true); return; }
+  try {
+    const bin = atob(data.b64);
+    const buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([buf], { type: data.mime }));
+    const a = document.createElement("a");
+    a.href = url; a.download = data.filename || fallbackName || "download";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast("Downloaded");
+  } catch (e) { toast("Could not decode that file", true); }
 }
 
 const speakerUrl = token => new URL("speaker.html", location.href).href + "?k=" + token;
@@ -607,6 +633,20 @@ function renderDetail(){
       '</td><td class="c-owner">'+esc(t.owner_role)+'</td><td class="c-src">'+esc(t.source_ref)+
       '</td><td class="c-by">'+esc((t.done_by||"").split("@")[0])+"</td></tr>";
   }).join("");
+  /* what speakers have sent in */
+  const inbox = p.program_speakers.flatMap(ps =>
+    (uploads[ps.id]||[]).map(u => ({ ...u, who: ps.speakers?.full_name || "" })));
+  const inboxPanel = inbox.length
+    ? '<section class="panel"><p class="panel-head"><span>Sent in by speakers</span><span>'+
+      inbox.length + (inbox.length===1?" file":" files") + '</span></p>'+
+      inbox.map(u =>
+        '<div class="sp-row"><div><div class="sp-name">'+esc(u.filename)+'</div>'+
+        '<div class="sp-meta">'+esc(u.who)+' · '+esc(u.kind)+' · '+esc(kb(u.size_bytes))+
+        ' · '+esc(FMT_LOG.format(new Date(u.uploaded_at)))+'</div></div>'+
+        '<button class="mini" data-dl="'+esc(u.id)+'" data-fn="'+esc(u.filename)+
+        '">Download</button></div>').join("")+'</section>'
+    : "";
+
   const docket='<section class="panel"><p class="panel-head"><span>Docket</span><span>'+
     p.tasks.filter(t=>t.done).length+" of "+p.tasks.length+" complete</span></p>"+
     '<div class="dk-scroll"><table class="dk"><thead><tr><th></th><th>Offset</th><th>Date</th>'+
@@ -614,7 +654,7 @@ function renderDetail(){
     "</tbody></table></div></section>";
 
   return chrome('<button class="back" data-back>← All programs</button>'+head+
-    speakersPanel+pkgPanel+docket+historyPanel(p.id));
+    speakersPanel+pkgPanel+inboxPanel+docket+historyPanel(p.id));
 }
 
 function editProgramForm(p){
@@ -840,6 +880,9 @@ function wire(){
     try { await navigator.clipboard.writeText(body); toast("Invitation email copied"); }
     catch (e) { window.prompt("Copy this email:", body); }
   });
+
+  on("[data-dl]","click",el=>
+    downloadUpload(el.getAttribute("data-dl"), el.getAttribute("data-fn")));
 
   on("[data-editsp]","click",el=>{
     view={ ...view, editSpeaker: el.getAttribute("data-editsp") }; render(); });

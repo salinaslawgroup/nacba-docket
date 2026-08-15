@@ -133,3 +133,22 @@ whether it has been opened and how often. Setting `revoked = true` on a row in
 
 `templates/` holds the six packet documents. They are blank templates containing no
 speaker data, which is why they can live in a public repository.
+
+## Uploads
+
+Speakers send materials from their packet page. Files are held in Postgres
+(`speaker_uploads.data`), not Supabase Storage, and every write goes through the
+same token check as everything else a speaker can reach.
+
+Storage was the obvious choice and was rejected: it would need either an anonymous
+write policy on the bucket — which the publishable key makes world-writable — or an
+Edge Function to mint signed upload URLs, which needs deploy access this project
+does not have. A 10 MB per-file cap keeps the database well inside the free tier.
+If volume ever justifies it, the table is the migration source.
+
+Uploading does **not** mark a deliverable received. The speaker's page shows "you
+sent this"; staff tick the box after reviewing. Those are different facts and the
+system keeps them apart.
+
+Staff see arrivals under "Sent in by speakers" on the program page and download one
+file at a time via `upload_bytes(id)`. List queries never carry the bytes.

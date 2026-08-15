@@ -346,6 +346,68 @@ async function loadData() {
 
 const speakerUrl = token => new URL("speaker.html", location.href).href + "?k=" + token;
 
+/* Template A from "7. Speaker Invitation Emails (staff).docx", with the
+   merge fields already filled from the record. Webinar only — a conference
+   needs registration, hotel, and room details this app does not hold. */
+function invitationEmail(p, ps) {
+  const s  = ps.speakers || {};
+  const lk = links[ps.id];
+  // Never first-name a judge. If the record carries an honorific we cannot
+  // reliably split a compound surname, so address the name exactly as written.
+  const name = (s.full_name || "").trim();
+  const formal = /^(Hon\.?|Judge|Justice|Prof\.?|Professor|Dr\.?)\s+/i.test(name);
+  const salutation = formal
+    ? name.replace(/,\s*Esq\.$/i, "")
+    : name.replace(/,\s*Esq\.$/i, "").split(/\s+/)[0];
+  const co = p.program_speakers.filter(x => x.id !== ps.id)
+    .map(x => x.speakers?.full_name).filter(Boolean);
+  const d = parseISO(p.event_date);
+  const long = new Intl.DateTimeFormat("en-US",
+    { weekday:"long", month:"long", day:"numeric", year:"numeric", timeZone:"UTC" }).format(d);
+
+  return [
+`Dear ${salutation},`, ``,
+`Thank you for agreeing to present for NACBA. This message confirms your program and gives you everything you will need.`, ``,
+`YOUR PROGRAM`,
+p.title,
+`${long} · 12:00 – 1:30 p.m. Pacific (3:00 – 4:30 p.m. Eastern)`,
+`Live webinar on Zoom. You will receive your join link separately, closer to the date.`,
+...(ps.topic ? [`Your topic on this program: ${ps.topic}`] : []),
+...(co.length ? [`Presenting with you: ${co.join(", ")}`] : []),
+``,
+`YOUR SPEAKER PACKET`,
+`Everything we need from you, and the date each item is due, is on your own packet page:`,
+lk ? speakerUrl(lk.token) : `[CREATE THE PACKET LINK FIRST — then copy this email again]`,
+``,
+`The page shows your deadlines as real calendar dates, tracks what we have already received, and holds every template you need — biography, outline, agreement, and PowerPoint. It is personal to you, so please do not forward it.`,
+``,
+`THE THREE DATES THAT MATTER`,
+`• Signed Speaker Agreement — we cannot publish any marketing for the program until this is on file.`,
+`• Biography and headshot — used for promotion and for your introduction on air.`,
+`• Written materials — a target date two weeks out, and a firm date one week out. The firm date is set by CLE filing requirements and cannot move.`,
+`Exact dates for each are on your packet page.`,
+``,
+`WHAT NACBA WILL DO`,
+`• Promote the program to our membership, including your name, headshot, and firm.`,
+`• Send you branded "I am speaking at NACBA" graphics and suggested post copy at least two weeks before the program, for your own social media.`,
+`• Run a technology check with you beforehand — microphone, camera, lighting, connection, and background.`,
+`• Record the session and make it available in the NACBA store.`,
+``,
+`ON THE DAY`,
+`Please join 30 minutes before the start time. We will admit you early for a final check of audio, video, and screen sharing. Attendee questions come through Zoom's Q&A rather than chat, and your moderator will bring them to you.`,
+``,
+`TWO THINGS WORTH FLAGGING`,
+`NACBA programs are educational rather than promotional, so please do not endorse or criticize any vendor. If a tool is relevant to your topic, describe it as your own practice choice — and if an attendee asks what you use, answer briefly and return to the substance. We also ask speakers to conduct themselves consistently with NACBA's Diversity, Equity, and Inclusion Policy. Both are set out in full in the Speaker Agreement on your packet page.`,
+``,
+`If anything here is wrong — particularly how your name should be pronounced — just reply and tell me.`,
+``,
+`With thanks,`,
+(session?.user?.email || "").split("@")[0],
+`NACBA Education Committee`,
+`admin@nacba.com · (800) 499-9040`
+  ].join("\n");
+}
+
 async function loadHistory(programId) {
   let q = sb.from("change_log")
     .select("id, table_name, program_id, label, field, old_value, new_value, changed_by, changed_at")
@@ -491,7 +553,8 @@ function renderDetail(){
           FMT_LOG.format(new Date(lk.last_opened_at)) : "packet link sent — not opened yet")
       : "";
     const linkBtn = lk
-      ? '<button class="mini" data-copylink="'+esc(lk.token)+'">Copy packet link</button>'
+      ? '<button class="mini" data-copylink="'+esc(lk.token)+'">Copy packet link</button>'+
+        '<button class="mini" data-email="'+ps.id+'">Copy email</button>'
       : '<button class="mini" data-newlink="'+ps.id+'">Create packet link</button>';
     return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+"</div>"+
       (meta?'<div class="sp-meta">'+esc(meta)+"</div>":"")+
@@ -767,6 +830,13 @@ function wire(){
     const url = speakerUrl(el.getAttribute("data-copylink"));
     try { await navigator.clipboard.writeText(url); toast("Link copied"); }
     catch (e) { window.prompt("Copy this link and send it to the speaker:", url); }
+  });
+  on("[data-email]","click",async el=>{
+    const p = programs.find(x => x.id === view.id);
+    const ps = p.program_speakers.find(x => x.id === el.getAttribute("data-email"));
+    const body = invitationEmail(p, ps);
+    try { await navigator.clipboard.writeText(body); toast("Invitation email copied"); }
+    catch (e) { window.prompt("Copy this email:", body); }
   });
 
   on("[data-editsp]","click",el=>{

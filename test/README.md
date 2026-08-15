@@ -1,0 +1,15 @@
+# Smoke test
+
+    node test/smoke.js
+
+Renders the staff app against stub data and **fires the click handlers**.
+
+It exists because of two bugs that shipped on 14 Aug 2026:
+
+- `loadHistory` was deleted by an unrelated edit. Every program card went
+  dead, because the function is only reached from a click.
+- The **Preview email** button's handler was added but its markup was not.
+
+Both passed a review of the source and a test of `render()`. Neither could
+have survived a test that clicked something and asserted on the rendered
+output. Check the result, not the edit.

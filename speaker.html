@@ -262,7 +262,7 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 /* The speaker-facing slice of the docket. Offsets match db/01_schema.sql. */
 const MILESTONES = [
   { off:-35, name:"Signed Speaker Agreement",  items:["agreement"], up:"other",
-    tpl:"4. Speaker Agreement.docx", tplLabel:"Agreement",
+    href:"agreement.html", tplLabel:"Open your agreement",
     note:"Needed before NACBA can publish any marketing for the program.",
     detail:
       "<p>Two commitments in the agreement shape your materials, so they are worth " +
@@ -406,9 +406,12 @@ function render(d) {
       const rel = m.due < today
         ? Math.abs(diffDays(today, m.due)) + " days ago"
         : (diffDays(today, m.due) === 0 ? "today" : "in " + diffDays(today, m.due) + " days");
-      const tpl = m.tpl
-        ? ' <a class="inline-tpl" href="templates/' + encodeURIComponent(m.tpl) +
-          '" download>↓ ' + esc(m.tplLabel) + "</a>" : "";
+      const tpl = m.href
+        ? ' <a class="inline-tpl" href="' + esc(m.href) + "?k=" + encodeURIComponent(tok) +
+          '">' + esc(m.tplLabel) + " →</a>"
+        : (m.tpl
+          ? ' <a class="inline-tpl" href="templates/' + encodeURIComponent(m.tpl) +
+            '" download>↓ ' + esc(m.tplLabel) + "</a>" : "");
       const up = m.up
         ? ' <button class="inline-up" data-jump="' + esc(m.up) + '">↑ Upload</button>' : "";
       const more = m.detail

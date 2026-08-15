@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="theme-color" content="#0B243A">
+<title>NACBA Speaker Agreement</title>
+<style>
+  :root{
+    --ground:#F0F3F6; --surface:#FFF; --surface-2:#F6F8FA;
+    --ink:#0B243A; --muted:#52657A; --faint:#8497A9;
+    --accent:#1D6091; --brand:#4F98CA; --accent-soft:#E4F0F9;
+    --critical:#9E2A33; --rule:#D9E0E7; --rule-strong:#BECAD5;
+    --shadow:0 1px 2px rgba(11,36,58,.06);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0A1621; --surface:#0F2130; --surface-2:#152B3C;
+    --ink:#E4EDF4; --muted:#9BB0C2; --faint:#7A8FA1;
+    --accent:#7FB6DC; --brand:#4F98CA; --accent-soft:#123048;
+    --critical:#E58B90; --rule:#22384A; --rule-strong:#334C60;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+  }}
+  :root[data-theme="dark"]{
+    --ground:#0A1621; --surface:#0F2130; --surface-2:#152B3C;
+    --ink:#E4EDF4; --muted:#9BB0C2; --faint:#7A8FA1;
+    --accent:#7FB6DC; --brand:#4F98CA; --accent-soft:#123048;
+    --critical:#E58B90; --rule:#22384A; --rule-strong:#334C60;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:17px;line-height:1.65;margin:0;padding:0 1.25rem 5rem;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:44rem;margin:0 auto}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .logo-plate{display:inline-block;background:#FFF;padding:.4rem .55rem;border-radius:3px;
+    line-height:0;margin:0 0 1rem;border:1px solid var(--brand)}
+  .logo-plate img{display:block;width:190px;height:auto}
+
+  header{padding:3rem 0 1.5rem;border-bottom:2px solid var(--ink);margin-bottom:1.75rem}
+  .eyebrow{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 .6rem}
+  h1{font-size:clamp(1.6rem,4.5vw,2.1rem);line-height:1.14;letter-spacing:-.016em;
+    font-weight:600;margin:0 0 .5rem}
+  .lede{color:var(--muted);font-size:.95rem;margin:0}
+
+  h2{font-size:1.08rem;font-weight:600;margin:2rem 0 .6rem;letter-spacing:-.006em}
+  p{margin:0 0 .85rem}
+  ul{margin:0 0 .9rem;padding-left:1.2rem}
+  li{margin-bottom:.5rem}
+
+  .party{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+    padding:1rem 1.15rem;margin-bottom:1.5rem;box-shadow:var(--shadow)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:.45rem 1.1rem;font-size:.95rem;margin:0}
+  .kv dt{color:var(--faint);font-size:.85rem;padding-top:.06rem}
+  .kv dd{margin:0}
+  .kv dd.blank{color:var(--faint);font-style:italic}
+
+  .callout{background:var(--accent-soft);border-left:3px solid var(--brand);
+    border-radius:0 4px 4px 0;padding:.95rem 1.1rem;margin:1.1rem 0}
+  .callout p{margin:0 0 .5rem;font-size:.93rem}
+  .callout p:last-child{margin-bottom:0}
+  .callout .label{display:block;font-size:.8rem;font-weight:600;color:var(--accent);
+    margin-bottom:.35rem}
+
+  .exceptions{border:1px solid var(--rule-strong);border-radius:4px;padding:.9rem 1.05rem;
+    margin:.6rem 0 0;min-height:5.5rem;background:var(--surface)}
+  .exceptions .hint{color:var(--faint);font-size:.88rem;font-style:italic;margin:0}
+
+  .sig{margin-top:2rem;display:grid;gap:1.6rem}
+  .sig-line{border-bottom:1px solid var(--ink);height:2.4rem}
+  .sig-label{font-size:.85rem;color:var(--muted);margin:.3rem 0 0}
+  .sig-pre{font-size:.95rem;margin:0 0 .1rem}
+
+  .actions{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin:2.5rem 0 0}
+  .btn{background:var(--surface);border:1px solid var(--rule-strong);border-radius:3px;
+    padding:.55rem .95rem;font-size:.88rem;font-weight:600;color:var(--accent);cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#FFF}
+  .hint{font-size:.88rem;color:var(--muted)}
+
+  footer{margin-top:2.5rem;padding-top:1.1rem;border-top:2px solid var(--ink);
+    font-size:.8rem;color:var(--faint);line-height:1.7}
+  footer a{color:var(--accent)}
+
+  .center{max-width:30rem;margin:0 auto;padding:6rem 0;text-align:center}
+  .center p{color:var(--muted)}
+
+  /* Printed copy. Only blocks shorter than a page are protected from breaking:
+     a tall block told not to break is pushed whole to the next page and leaves
+     the rest of the current one blank. */
+  @media print{
+    :root{
+      --ground:#FFF; --surface:#FFF; --surface-2:#FAFAFA;
+      --ink:#0B243A; --muted:#41505F; --faint:#6B7B8A;
+      --accent:#1D6091; --brand:#4F98CA; --accent-soft:#EEF5FA;
+      --critical:#8E252E; --rule:#D0D8DF; --rule-strong:#AEBBC6; --shadow:none;
+    }
+    @page{margin:16mm}
+    body{background:#FFF;font-size:10pt;line-height:1.5;padding:0}
+    .wrap{max-width:none}
+    .actions{display:none}
+    header{padding-top:0}
+    h1{font-size:18pt}
+    h2{font-size:11.5pt;margin:1.1rem 0 .4rem;page-break-after:avoid}
+    p{margin:0 0 .55rem}
+    ul{margin:0 0 .6rem}
+    li{margin-bottom:.3rem}
+    .party{padding:.7rem .85rem;margin-bottom:.9rem}
+    .callout{padding:.7rem .85rem;margin:.8rem 0}
+    .sig{margin-top:1.4rem;gap:1.1rem}
+    .sig-line{height:2rem}
+    .exceptions{min-height:4rem}
+    header{margin-bottom:1.2rem;padding-bottom:1rem}
+    footer{margin-top:1.4rem;padding-top:.8rem}
+    section,ul,.party{page-break-inside:auto}
+    li,.callout,.sig-block,.party{page-break-inside:avoid}
+    .sig{page-break-inside:avoid}
+    p,li{orphans:3;widows:3}
+    footer{page-break-inside:avoid}
+    a{text-decoration:none;color:inherit}
+  }
+</style>
+</head>
+<body>
+<div class="wrap"><main id="app"></main></div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+
+const SUPABASE_URL = "https://lnollnddtavdhigkkefy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_OAzj077fESqmwN8LUre8Lg_yWPVjTUQ";
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const FMT_FULL = new Intl.DateTimeFormat("en-US",
+  { weekday:"long", month:"long", day:"numeric", year:"numeric", timeZone:"UTC" });
+const FMT_SHORT = new Intl.DateTimeFormat("en-US",
+  { month:"long", day:"numeric", year:"numeric", timeZone:"UTC" });
+const parseISO = i => { const [y,m,d]=i.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
+const addDays = (dt,n) => new Date(dt.getTime()+n*86400000);
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+const app = document.getElementById("app");
+const brand = () => '<span class="logo-plate"><img src="assets/nacba-logo.png" ' +
+  'alt="National Association of Consumer Bankruptcy Attorneys" width="190" height="33"></span>';
+
+function notFound(msg) {
+  app.innerHTML = '<div class="center">' + brand() + "<h1>Link not recognized</h1><p>" +
+    esc(msg) + "</p><p>Please ask your NACBA program coordinator for a new link, or email " +
+    '<a href="mailto:admin@nacba.com">admin@nacba.com</a>.</p></div>';
+}
+
+function render(d) {
+  const s = d.speaker || {}, p = d.program || {};
+  const ev = parseISO(p.event_date);
+  const due14 = addDays(ev, -14), due7 = addDays(ev, -7);
+  const blank = t => '<dd class="blank">' + t + "</dd>";
+
+  app.innerHTML =
+    "<header>" + brand() +
+    '<p class="eyebrow">Education Committee</p>' +
+    "<h1>Speaker Agreement</h1>" +
+    '<p class="lede">Consent, licensing, and materials. Please review, sign, and return.</p>' +
+    "</header>" +
+
+    '<div class="party"><dl class="kv">' +
+      "<dt>Speaker</dt><dd>" + esc(s.full_name || "") + "</dd>" +
+      (s.preferred_title ? "<dt>Title</dt><dd>" + esc(s.preferred_title) + "</dd>" : "") +
+      "<dt>Firm</dt>" + (s.firm ? "<dd>" + esc(s.firm) + "</dd>" : blank("please complete")) +
+      "<dt>Email</dt>" + (s.email ? "<dd>" + esc(s.email) + "</dd>" : blank("please complete")) +
+      "<dt>Address</dt>" + blank("please complete") +
+      "<dt>Phone</dt>" + blank("please complete") +
+    "</dl></div>" +
+
+    '<div class="party"><dl class="kv">' +
+      "<dt>Event</dt><dd>" + esc(p.title || "") + "</dd>" +
+      "<dt>Date</dt><dd>" + esc(FMT_FULL.format(ev)) + " · 12:00 – 1:30 p.m. Pacific</dd>" +
+      "<dt>Format</dt><dd>Live webinar, recorded</dd>" +
+      (d.topic ? "<dt>Your topic</dt><dd>" + esc(d.topic) + "</dd>" : "") +
+    "</dl></div>" +
+
+    "<section><h2>Speaker Consent</h2>" +
+    "<p>By signing this form, I acknowledge that I have read and agreed to the following, " +
+    "including the sections on vendors and on respectful participation below:</p><ul>" +
+    "<li>I understand the guidelines for written materials, set out below, and will adhere " +
+    "to the document requirements and deadlines.</li>" +
+    "<li>I agree to timely provide NACBA my speaker biography and a current headshot.</li>" +
+    "<li>I grant the National Association of Consumer Bankruptcy Attorneys (NACBA) " +
+    "permission to make audio and video recordings of any and all of the presentations that " +
+    "I give in relation to this webinar, and to resell those recordings in NACBA's online " +
+    "store.</li>" +
+    "<li>I grant NACBA the right to use and distribute my name, voice, picture, likeness, " +
+    "and biographic or other information in connection with my Presentation or the " +
+    "Recording, including, without limitation, use in printed or electronic media for " +
+    "purposes of promoting NACBA and the missions of NACBA.</li>" +
+    "<li>I grant NACBA a license to incorporate into the Recording, in whole or in part, any " +
+    "written speeches, visual aids, and other visual or written materials used, performed, " +
+    "displayed, or provided by me in connection with the Presentation (“Materials”), " +
+    "including, without limitation, a license to record any public performance of such " +
+    "Materials.</li>" +
+    "<li>I grant NACBA a nonexclusive right to reproduce and make derivative works based " +
+    "upon, and to distribute, display, and perform to the general public the Presentation, " +
+    "Recording, or Materials, in whole or in part, by means of the Internet, via physical " +
+    "media, print media, or by any other means, including, without limitation, to prepare " +
+    "transcripts of the Presentation or Recording.</li>" +
+    "<li>To the extent my Presentation or Materials are protected by copyright law, I " +
+    "reserve those rights to myself, except as granted above.</li>" +
+    "<li>Except as noted below, to the best of my knowledge, I represent and warrant that " +
+    "any Materials furnished by me for the Presentation are either my own, or their use and " +
+    "distribution relating to the Event or Recording has been authorized to me without any " +
+    "restrictions, and that they do not infringe upon any patent, trademark, or copyright, " +
+    "nor are they slanderous, libelous, or an invasion of any person's right of privacy or " +
+    "publicity.</li>" +
+    "<li>I will provide all written materials necessary to complete the MCLE applications, " +
+    "if any, and my presentation no later than <b>" + esc(FMT_SHORT.format(due14)) +
+    "</b>, and in no event later than <b>" + esc(FMT_SHORT.format(due7)) + "</b>.</li>" +
+    "</ul>" +
+
+    '<div class="callout"><span class="label">Why that final date is firm</span>' +
+    "<p>NACBA files continuing legal education applications on your program's behalf, and " +
+    "those filings have state-imposed lead times. Materials received after " +
+    esc(FMT_SHORT.format(due7)) + " may prevent the program being accredited in every state " +
+    "where we have applied.</p></div></section>" +
+
+    "<section><h2>Vendors, Products, and Services</h2>" +
+    "<p>NACBA programs are educational, not promotional. Our members rely on NACBA precisely " +
+    "because we do not take sides on commercial products, and that neutrality only holds if " +
+    "every speaker observes it. I agree that:</p><ul>" +
+    "<li>I will not disparage any vendor, product, or service, or any identifiable company " +
+    "or individual, in my presentation or in my written materials.</li>" +
+    "<li>I will not promote, endorse, market, or sell any vendor, product, or service — " +
+    "including my own, and including any in which I hold a financial interest.</li>" +
+    "<li>Where a tool is genuinely relevant to the substance of the program, I may describe " +
+    "it only as my own practice choice — “this is what I use” — without recommending that " +
+    "attendees adopt it and without comparing it to alternatives.</li>" +
+    "<li>If an attendee asks directly what I use, I may answer briefly and factually, and " +
+    "will then return to the substance of the program. I will not treat the question as an " +
+    "invitation to promote.</li>" +
+    "<li>I will not make comparative claims about competing products, and I will not comment " +
+    "on any vendor's legal compliance, ethics, or trustworthiness.</li>" +
+    "<li>I will disclose to NACBA in advance any sponsorship, referral arrangement, " +
+    "ownership interest, or compensation I have from any vendor I expect to mention.</li>" +
+    "</ul>" +
+    '<div class="callout"><span class="label">Why this matters</span>' +
+    "<p>Attendees are practicing lawyers making purchasing decisions for their firms. A " +
+    "recommendation from a NACBA podium carries weight, and a criticism can carry legal risk " +
+    "for both the speaker and NACBA.</p>" +
+    "<p>Nothing here prevents you from teaching how a category of tool works, or from " +
+    "answering an honest question honestly. It prevents the program from becoming a sales " +
+    "pitch or a grievance.</p></div></section>" +
+
+    "<section><h2>Respectful Participation</h2>" +
+    "<p>NACBA's members and the clients they serve are diverse, and our programs are " +
+    "expected to reflect that. I have read NACBA's Diversity, Equity, and Inclusion Policy " +
+    "and agree to conduct myself consistently with it. I further agree that:</p><ul>" +
+    "<li>I will treat attendees, co-panelists, moderators, and NACBA staff with respect and " +
+    "professional courtesy, before, during, and after the program.</li>" +
+    "<li>My presentation and materials will be free of language that demeans or stereotypes " +
+    "any person or group, including on the basis of race, colour, national origin, " +
+    "ethnicity, religion, sex, sexual orientation, gender identity or expression, age, " +
+    "disability, or veteran status.</li>" +
+    "<li>Examples, hypotheticals, and humour will be chosen so that they include, rather " +
+    "than exclude, the full range of NACBA's membership.</li>" +
+    "<li>Consumer bankruptcy clients are people in financial distress. I will speak about " +
+    "debtors in terms that do not stigmatise them for seeking relief the law provides.</li>" +
+    "<li>If a concern is raised about my conduct or content, I will engage with NACBA in " +
+    "good faith to address it.</li></ul></section>" +
+
+    "<section><h2>Exceptions noted by the speaker</h2>" +
+    "<p>If any material is not your own or carries restrictions, or if you have a vendor " +
+    "relationship to disclose under the section above, describe it here. If none, write " +
+    "“none.”</p>" +
+    '<div class="exceptions"><p class="hint">Write here, or leave blank and note “none” when ' +
+    "you sign.</p></div></section>" +
+
+    '<section class="sig"><div class="sig-block">' +
+      '<p class="sig-pre">' + esc(s.full_name || "") + "</p>" +
+      '<div class="sig-line"></div><p class="sig-label">Signature</p></div>' +
+      '<div class="sig-block"><div class="sig-line"></div>' +
+      '<p class="sig-label">Printed name</p></div>' +
+      '<div class="sig-block"><div class="sig-line"></div>' +
+      '<p class="sig-label">Date</p></div></section>' +
+
+    "<section><h2>Guidelines for Materials</h2>" +
+    "<p>NACBA's objective is to engage reputable and experienced speakers, and for materials " +
+    "to maintain a high standard of content, value, and professionalism throughout all " +
+    "education programming. Attendance by our members and non-members is an investment of " +
+    "time and money.</p><ul>" +
+    "<li>NACBA provides a Word template for your written materials and outline. Submit final " +
+    "materials as a single Adobe PDF, including the template cover page with the session " +
+    "date, title, and speakers.</li>" +
+    "<li>Speaker biographies should be no longer than one page and are added at the back of " +
+    "the session's materials. If a biography has been copied from a firm's website, add the " +
+    "firm name and city.</li>" +
+    "<li>A PowerPoint presentation is encouraged but not mandatory. You may use the NACBA " +
+    "template, or your own template carrying NACBA's logo.</li>" +
+    "<li>Do not submit photocopies of pleadings with sensitive material blacked out by hand. " +
+    "Provide PDF copies and use the PDF redaction feature.</li>" +
+    "<li>Take care when scanning photographs and photocopies that they are not too dark or " +
+    "blurred.</li>" +
+    "<li>If the materials come from a copyrighted publication, NACBA must collect proof of " +
+    "permission to reprint. The author or organization may require that a “permission " +
+    "granted to reprint” statement be added.</li>" +
+    "<li>All submissions are reviewed by NACBA's education chairs for content and style, and " +
+    "may be returned for additional work if needed.</li></ul></section>" +
+
+    '<div class="actions"><button class="btn primary" id="print">Save or print to sign</button>' +
+    '<span class="hint">Sign it, then upload it from your packet page.</span></div>' +
+
+    "<footer>National Association of Consumer Bankruptcy Attorneys<br>" +
+    "4315 50th Street NW, Suite 100 PMB 7167, Washington, DC 20016<br>" +
+    '<a href="mailto:admin@nacba.com">admin@nacba.com</a> · (800) 499-9040</footer>';
+
+  document.getElementById("print")?.addEventListener("click", () => window.print());
+}
+
+(async function () {
+  const tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");
+  if (!tok) { notFound("This page needs the full link from your packet."); return; }
+  try {
+    const { data, error } = await sb.rpc("speaker_packet", { tok });
+    if (error) { notFound("We couldn't load your agreement just now."); return; }
+    if (!data)  { notFound("This link is no longer active."); return; }
+    render(data);
+  } catch (e) { notFound("We couldn't load your agreement just now."); }
+})();
+</script>
+</body>
+</html>

@@ -57,9 +57,12 @@ volatile
 set search_path = public
 as $$
 declare
-  link  speaker_links%rowtype;
-  bytes bytea;
-  sz    int;
+  link   speaker_links%rowtype;
+  bytes  bytea;
+  sz     int;
+  v_name text;
+  v_id   uuid;
+  v_at   timestamptz;
 begin
   if tok is null or length(tok) < 16 then
     return jsonb_build_object('ok', false, 'error', 'Link not recognized.');
@@ -93,20 +96,30 @@ begin
       'error', 'That file is larger than 10 MB. Please email it to your coordinator instead.');
   end if;
 
-  -- Returns the new row so the page can update its own list without
-  -- re-fetching the packet, which would otherwise count as another visit.
-  return (
-    with ins as (
-      insert into speaker_uploads (program_speaker_id, kind, filename, mime, size_bytes, data)
-      values (link.program_speaker_id, kind,
-              left(regexp_replace(filename, '[\r\n\t]', '', 'g'), 200),
-              left(coalesce(mime, ''), 120), sz, bytes)
-      returning id, kind, filename, size_bytes, uploaded_at
-    )
-    select jsonb_build_object('ok', true, 'upload', jsonb_build_object(
-      'id', id, 'kind', kind, 'filename', filename,
-      'size_bytes', size_bytes, 'uploaded_at', uploaded_at)) from ins
-  );
+  v_name := left(regexp_replace(filename, '[\r\n\t]', '', 'g'), 200);
+
+  -- Plain INSERT ... RETURNING INTO, deliberately.
+  --
+  -- A data-modifying CTE is only legal at the top level of a query, so
+  -- wrapping the INSERT in "return (with ins as (...) select ...)" fails at
+  -- runtime with "WITH clause containing a data-modifying statement must be
+  -- at the top level" — the function creates cleanly and only breaks when a
+  -- speaker actually uploads.
+  --
+  -- RETURNING lists only id and uploaded_at: kind, filename, and mime are
+  -- also parameter names, and those columns are in scope inside RETURNING,
+  -- so naming them there raises "column reference is ambiguous".
+  insert into speaker_uploads (program_speaker_id, kind, filename, mime, size_bytes, data)
+  values (link.program_speaker_id, kind, v_name,
+          left(coalesce(mime, ''), 120), sz, bytes)
+  returning id, uploaded_at into v_id, v_at;
+
+  return jsonb_build_object('ok', true, 'upload', jsonb_build_object(
+    'id',          v_id,
+    'kind',        kind,
+    'filename',    v_name,
+    'size_bytes',  sz,
+    'uploaded_at', v_at));
 end $$;
 
 revoke all on function public.speaker_upload(text,text,text,text,text) from public;

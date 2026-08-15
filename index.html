@@ -95,6 +95,7 @@
     border:none;padding:.15rem .3rem;color:var(--faint)}
   .mini:hover{color:var(--accent);text-decoration:underline}
   .mini.danger:hover{color:var(--critical)}
+  a.mini{text-decoration:none;white-space:nowrap;align-self:center}
 
   /* ---- alerts ---- */
   .alerts{margin-bottom:2rem}
@@ -553,7 +554,8 @@ function renderDetail(){
           FMT_LOG.format(new Date(lk.last_opened_at)) : "packet link sent — not opened yet")
       : "";
     const linkBtn = lk
-      ? '<button class="mini" data-copylink="'+esc(lk.token)+'">Copy packet link</button>'+
+      ? '<a class="mini" href="'+esc(speakerUrl(lk.token))+'" target="_blank" rel="noopener">Preview packet</a>'+
+        '<button class="mini" data-copylink="'+esc(lk.token)+'">Copy link</button>'+
         '<button class="mini" data-email="'+ps.id+'">Copy email</button>'
       : '<button class="mini" data-newlink="'+ps.id+'">Create packet link</button>';
     return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+"</div>"+

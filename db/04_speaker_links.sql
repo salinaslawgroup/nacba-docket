@@ -82,11 +82,17 @@ begin
     return null;
   end if;
 
-  update speaker_links
-     set open_count      = open_count + 1,
-         last_opened_at  = now(),
-         first_opened_at = coalesce(first_opened_at, now())
-   where id = link.id;
+  -- Count the speaker's own visits only. Staff previewing a packet before
+  -- sending it are signed in and on the allowlist, so their visits are not
+  -- recorded — otherwise "has the speaker opened it yet?" stops meaning
+  -- anything the moment a coordinator checks their work.
+  if not public.is_allowed() then
+    update speaker_links
+       set open_count      = open_count + 1,
+           last_opened_at  = now(),
+           first_opened_at = coalesce(first_opened_at, now())
+     where id = link.id;
+  end if;
 
   select jsonb_build_object(
     'speaker', jsonb_build_object(

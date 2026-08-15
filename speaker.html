@@ -119,9 +119,53 @@
   .foot{font-size:.72rem;letter-spacing:.04em;color:var(--faint);line-height:1.7}
   .foot a{color:var(--accent)}
 
+  ul.plain{margin:0;padding-left:1.15rem}
+  ul.plain li{margin-bottom:.5rem;font-size:.93rem}
+  ul.plain li:last-child{margin-bottom:0}
+  .panel .fine{font-size:.85rem;color:var(--muted);margin:.9rem 0 0;
+    padding-top:.8rem;border-top:1px solid var(--rule)}
+  .panel p{margin:0 0 .8rem;font-size:.93rem}
+
+  .actions{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin:2.5rem 0 0}
+  .btn{background:var(--surface);border:1px solid var(--rule-strong);border-radius:3px;
+    padding:.5rem .85rem;font-family:ui-monospace,Menlo,monospace;font-size:.68rem;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--accent);cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .hint{font-size:.85rem;color:var(--muted)}
+  .printed{color:var(--faint)}
+
   .center{max-width:30rem;margin:0 auto;padding:6rem 0;text-align:center}
   .center h1{margin-bottom:.8rem}
   .center p{color:var(--muted)}
+
+  /* ---- printed / saved as PDF ----
+     Forced to the light palette: a speaker on a dark-mode laptop should not
+     get a black page. Tokens are restated rather than inherited. */
+  @media print{
+    :root{
+      --ground:#FFF; --surface:#FFF; --surface-2:#FAFAFA;
+      --ink:#0B243A; --muted:#41505F; --faint:#6B7B8A;
+      --accent:#1D6091; --brand:#4F98CA; --accent-soft:#EEF5FA;
+      --critical:#8E252E; --critical-soft:#FBF2F3;
+      --warn:#7A5610; --warn-soft:#FBF6EA;
+      --ok:#245A46; --ok-soft:#EFF6F2;
+      --rule:#D0D8DF; --rule-strong:#AEBBC6; --shadow:none;
+    }
+    @page{margin:14mm}
+    body{background:#FFF;font-size:10.5pt;padding:0}
+    .wrap{max-width:none}
+    .actions,.file .arrow{display:none}
+    header{padding-top:0;page-break-after:avoid}
+    h1{font-size:19pt}
+    h2{font-size:12.5pt;page-break-after:avoid}
+    section{page-break-inside:avoid;margin-bottom:1.1rem}
+    .panel,.callout{box-shadow:none;page-break-inside:avoid}
+    .dl-item{page-break-inside:avoid}
+    .file{border-color:#D0D8DF}
+    .file::after{content:" (download from your packet page)";font-size:8pt;color:#6B7B8A}
+    footer{page-break-inside:avoid}
+    a{text-decoration:none;color:inherit}
+  }
 
   @media (max-width:34rem){
     body{padding:0 1rem 4rem}
@@ -173,8 +217,6 @@ const MILESTONES = [
 ];
 
 const TEMPLATES = [
-  { file:"1. Speaker Packet - Requirements & Deadlines.docx", ext:"DOCX",
-    name:"Requirements and deadlines", desc:"Everything below, as a document you can keep." },
   { file:"2. Speaker Biography Template.docx", ext:"DOCX",
     name:"Biography template", desc:"One page or less. Includes name pronunciation." },
   { file:"3. Webinar Outline Template.docx", ext:"DOCX",
@@ -266,6 +308,56 @@ function render(d) {
     '<p class="sub">Please use these — consistent materials are how NACBA keeps a professional ' +
     "standard across every program.</p>" + '<div class="files">' + files + "</div></section>" +
 
+    "<section><h2>Your headshot</h2><div class=\"panel\"><ul class=\"plain\">" +
+    "<li>High resolution — at least 1200 pixels on the shorter side.</li>" +
+    "<li>JPG or PNG. Please don't send one embedded in a Word or PDF file.</li>" +
+    "<li>Professional, current, cropped to head and shoulders.</li></ul>" +
+    '<p class="fine">Your headshot is used for NACBA advertising and promotion only. It is ' +
+    "stored in our internal marketing files and is never included in the materials attendees " +
+    "download.</p></div></section>" +
+
+    "<section><h2>Materials standards</h2><div class=\"panel\"><ul class=\"plain\">" +
+    "<li>Submit final written materials as a single PDF, using the outline template above.</li>" +
+    "<li>Keep your biography to one page. If it's taken from your firm website, add the firm " +
+    "name and city.</li>" +
+    "<li>Don't submit photocopies of pleadings with sensitive material blacked out by hand — " +
+    "provide PDF copies and use the PDF redaction feature.</li>" +
+    "<li>Check that scanned exhibits are neither too dark nor blurred.</li>" +
+    "<li>A table of contents, bookmarks, and page numbers are welcome but not required.</li>" +
+    "<li>If any material comes from a copyrighted publication, tell your coordinator early — " +
+    "NACBA must obtain written permission to reprint, and that takes time.</li></ul>" +
+    '<p class="fine">All submissions are reviewed by NACBA’s education chairs for content ' +
+    "and style, and may occasionally be returned for revision. That's why there's a target date " +
+    "a week before the firm one.</p></div></section>" +
+
+    "<section><h2>What NACBA will do</h2><div class=\"panel\"><ul class=\"plain\">" +
+    "<li>Promote the program to our membership, including your name, headshot, and firm.</li>" +
+    "<li>Send you branded “I am speaking at NACBA” graphics and suggested post copy at " +
+    "least two weeks before the program, for your own social media.</li>" +
+    "<li>Run a technology check with you — microphone, camera, lighting, connection, and " +
+    "background.</li>" +
+    "<li>Record the session and make it available in the NACBA store.</li></ul></div></section>" +
+
+    "<section><h2>Program neutrality and conduct</h2><div class=\"panel\">" +
+    "<p>Two commitments in your Speaker Agreement shape your materials, so they're worth " +
+    "knowing before you start writing.</p><ul class=\"plain\">" +
+    "<li><b>NACBA programs are educational, not promotional.</b> Please don't disparage or " +
+    "endorse any vendor, product, or service. If a tool is genuinely relevant, describe it as " +
+    "your own practice choice — and if an attendee asks what you use, answer briefly and " +
+    "return to the substance.</li>" +
+    "<li><b>Respectful participation.</b> Speakers agree to conduct themselves consistently " +
+    "with NACBA's Diversity, Equity, and Inclusion Policy: respectful treatment of everyone " +
+    "in the room, inclusive examples and humor, and language about debtors that doesn't " +
+    "stigmatize them for seeking relief the law provides.</li>" +
+    "<li>If you have a sponsorship, referral arrangement, ownership interest, or any " +
+    "compensation from a vendor you expect to mention, please disclose it to us in " +
+    "advance.</li></ul></div></section>" +
+
+    "<section><h2>On the day</h2><div class=\"panel\">" +
+    "<p>Please join 30 minutes before the start time. We'll admit you early for a final check " +
+    "of audio, video, and screen sharing. Attendee questions come through Zoom's Q&amp;A rather " +
+    "than chat, and your moderator will bring them to you.</p></div></section>" +
+
     "<section><h2>Details we hold for you</h2><div class=\"panel\"><dl class=\"kv\">" +
     "<dt>Name</dt><dd>" + esc(d.speaker.full_name) + "</dd>" +
     (d.speaker.preferred_title ? "<dt>Title</dt><dd>" + esc(d.speaker.preferred_title) + "</dd>" : "") +
@@ -277,9 +369,16 @@ function render(d) {
     "name should be pronounced — please tell your coordinator. This is what we use to introduce " +
     "you on air.</p></section>" +
 
+    '<div class="actions"><button class="btn" id="print">Save this page as a PDF</button>' +
+    '<span class="hint">Everything above, with your dates, as a file you can keep.</span></div>' +
+
     "<footer><p class=\"foot\">National Association of Consumer Bankruptcy Attorneys<br>" +
     'Questions: <a href="mailto:admin@nacba.com">admin@nacba.com</a> · (800) 499-9040<br>' +
-    "This page is personal to you. Please don't forward the link.</p></footer>";
+    "This page is personal to you. Please don't forward the link.<br>" +
+    '<span class="printed">Prepared for ' + esc(d.speaker.full_name) + " · " +
+    esc(FMT_DATE.format(todayUTC())) + "</span></p></footer>";
+
+  document.getElementById("print")?.addEventListener("click", () => window.print());
 }
 
 (async function () {

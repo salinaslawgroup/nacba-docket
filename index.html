@@ -765,7 +765,8 @@ function renderDetail(){
     const linkBtn = lk
       ? '<a class="mini" href="'+esc(speakerUrl(lk.token))+'" target="_blank" rel="noopener">Preview packet</a>'+
         '<button class="mini" data-copylink="'+esc(lk.token)+'">Copy link</button>'+
-        '<button class="mini" data-email="'+ps.id+'">Copy email</button>'
+        '<button class="mini" data-email="'+ps.id+'">Copy email</button>'+
+        '<button class="mini" data-emailprev="'+ps.id+'">Preview email</button>'
       : '<button class="mini" data-newlink="'+ps.id+'">Create packet link</button>';
     return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+"</div>"+
       (meta?'<div class="sp-meta">'+esc(meta)+"</div>":"")+

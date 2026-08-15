@@ -5,3 +5,9 @@ db/02_seed.sql
 
 *.csv
 .DS_Store
+
+# Supabase CLI local state and secrets
+supabase/.branches
+supabase/.temp
+supabase/seed.sql
+.env

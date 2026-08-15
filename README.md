@@ -15,14 +15,15 @@ speaker roster includes federal court and Department of Justice addresses that m
 not be publicly readable.
 
 ```
-index.html         the whole app — no build step, no dependencies to install
-db/01_schema.sql   tables, the docket engine, row-level security
-db/03_editing.sql  append-only change history
+index.html              the staff app — no build step, nothing to install
+speaker.html            the speaker packet page
+supabase/migrations/    the database, in order
+templates/              the six speaker packet documents
 ```
 
-`db/02_seed.sql` — the 2026 season — is **git-ignored on purpose**. It carries
+`supabase/seed.sql` — the 2026 season — is **git-ignored on purpose**. It carries
 speaker contact details, including federal court and Department of Justice
-addresses. It is applied directly in Supabase and kept outside this repository.
+addresses, so it is applied directly and kept outside this repository.
 
 The Supabase publishable key in `index.html` is safe in public source. It is designed
 to ship in browser code; access is controlled by row-level security, not by hiding
@@ -30,11 +31,18 @@ the key.
 
 ## Setup
 
-**1. Run the SQL.** In the Supabase project's SQL editor, run `db/01_schema.sql`,
-then `db/02_seed.sql`, then `db/03_editing.sql`. All three are safe to re-run.
+**1. Apply the database.** With the Supabase CLI linked (see below):
 
-Run the history migration *last* — seeding before it is deliberate, so the initial
-import doesn't arrive as 200 log entries.
+```
+supabase db push
+```
+
+Every migration is idempotent, so pushing against a database that already has them
+is safe. Seed data is applied separately — `supabase/seed.sql` is not a migration,
+because it holds speaker contact details and must stay out of this repository.
+
+Seed *before* the change-history migration if you are building a database from
+scratch, or the initial import arrives as two hundred log entries.
 
 **2. Add the people who need access.** Nobody sees a single row unless their email is
 in `allowed_emails`:
@@ -152,3 +160,40 @@ system keeps them apart.
 
 Staff see arrivals under "Sent in by speakers" on the program page and download one
 file at a time via `upload_bytes(id)`. List queries never carry the bytes.
+
+## Working with the database
+
+The app deploys itself — pushing to `main` rebuilds the GitHub Pages site. The
+database does not. Migrations are a description of the schema; they change nothing
+until they are applied.
+
+**One-time setup**
+
+```
+supabase login
+supabase link --project-ref lnollnddtavdhigkkefy
+```
+
+`link` asks for the database password, found under Project Settings → Database.
+Neither command should be run by anyone but the project owner.
+
+**Applying changes**
+
+```
+supabase db push          # apply anything not yet applied
+supabase migration list   # compare local migrations against the remote
+```
+
+**Adding a change**
+
+```
+supabase migration new whatever_it_does
+```
+
+Write idempotent SQL — `create table if not exists`, `create or replace function`,
+`drop policy if exists` before `create policy`. Every migration here follows that
+rule, so re-running one is never destructive.
+
+**Never point this at the firm's Supabase project.** The NACBA database is
+deliberately a separate project so that no automated process, and no session of
+Claude, can reach client files.

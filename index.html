@@ -385,6 +385,22 @@ async function loadData() {
     (spkCats[r.speaker_id] = spkCats[r.speaker_id] || []).push(r.category_id); });
 }
 
+/* Change history. Deliberately forgiving: history is a nicety, and a
+   failure here must never stop a program page from opening. */
+async function loadHistory(programId) {
+  try {
+    let q = sb.from("change_log")
+      .select("id, table_name, program_id, label, field, old_value, new_value, changed_by, changed_at")
+      .order("changed_at", { ascending: false })
+      .limit(40);
+    if (programId) q = q.eq("program_id", programId);
+    const { data, error } = await q;
+    history = error ? [] : (data || []);
+  } catch (e) {
+    history = [];
+  }
+}
+
 const catName = id => (categories.find(c => c.id === id) || {}).name || "";
 
 /* Toggle chips. `owner` is the program or speaker id, `on` the ids already set. */
@@ -1019,15 +1035,22 @@ function wire(){
   document.getElementById("signout")?.addEventListener("click", async ()=>{
     await sb.auth.signOut(); session=null; renderGate();
   });
-  document.getElementById("hist-all")?.addEventListener("click", async ()=>{
-    await loadHistory(null);
-    view={ name:"season", tab:"history", id:null, edit:false, editSpeaker:null, creating:false };
+  document.getElementById("hist-all")?.addEventListener("click", ()=>{
+    history = [];
+    view={ name:"season", tab:"history", id:null, edit:false, editSpeaker:null, creating:false, cat:view.cat };
     render(); window.scrollTo(0,0);
+    loadHistory(null).then(() => { if (view.tab === "history") render(); });
   });
 
   on("[data-open]","click",(el,e)=>{ e.stopPropagation();
-    view={ ...view, name:"detail", id:el.getAttribute("data-open"), edit:false, editSpeaker:null };
-    loadHistory(view.id).then(()=>{ render(); window.scrollTo(0,0); }); });
+    const id = el.getAttribute("data-open");
+    view={ ...view, name:"detail", id, edit:false, editSpeaker:null };
+    history = [];
+    render(); window.scrollTo(0,0);          // open it now
+    loadHistory(id).then(() => {             // history catches up
+      if (view.name === "detail" && view.id === id) render();
+    });
+  });
   on("[data-tab]","click",el=>{
     view={ ...view, name:"season", tab:el.getAttribute("data-tab"), id:null, creating:false }; render(); });
   on("[data-back]","click",()=>{
@@ -1119,6 +1142,11 @@ async function boot(){
 sb.auth.onAuthStateChange(ev=>{
   if ((ev==="SIGNED_IN"||ev==="TOKEN_REFRESHED") && !session) boot();
 });
+window.addEventListener("unhandledrejection", ev => {
+  const m = ev.reason?.message || String(ev.reason || "");
+  if (m) toast("Something failed: " + m, true);
+});
+
 boot();
 </script>
 </body>

@@ -43,7 +43,15 @@
   body{background:var(--ground);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
     font-size:16px;line-height:1.6;margin:0;padding:0 1.25rem 5rem;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:44rem;margin:0 auto}
+  .wrap{max-width:60rem;margin:0 auto}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 18.5rem;gap:2.25rem;align-items:start}
+  .side{position:sticky;top:1.25rem;display:flex;flex-direction:column;gap:1.5rem}
+  .side section{margin:0}
+  .side h2{font-size:.95rem}
+  @media (max-width:54rem){
+    .layout{grid-template-columns:1fr;gap:0}
+    .side{position:static}
+  }
   .m,.eyebrow,.label,.when,.chip,.btn,.foot,.status{font-family:ui-monospace,"SF Mono",
     SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -88,18 +96,6 @@
   .st-ok{background:var(--ok-soft);color:var(--ok)}
   .st-wait{background:var(--surface-2);color:var(--faint);border:1px solid var(--rule)}
 
-  /* downloads */
-  .files{display:grid;gap:.5rem}
-  .file{display:flex;align-items:center;gap:.85rem;padding:.75rem .9rem;
-    background:var(--surface);border:1px solid var(--rule);border-radius:4px;
-    text-decoration:none;color:inherit;transition:border-color .12s ease}
-  .file:hover{border-color:var(--accent)}
-  .file .ext{font-family:ui-monospace,Menlo,monospace;font-size:.56rem;letter-spacing:.08em;
-    text-transform:uppercase;background:var(--accent-soft);color:var(--accent);
-    padding:.3rem .4rem;border-radius:2px;flex:none;min-width:3.1rem;text-align:center}
-  .file .fname{font-size:.95rem;font-weight:600;line-height:1.3}
-  .file .fdesc{font-size:.82rem;color:var(--muted);line-height:1.35}
-  .file .arrow{margin-left:auto;color:var(--faint);flex:none}
 
   .callout{background:var(--accent-soft);border-left:3px solid var(--brand);
     border-radius:0 4px 4px 0;padding:1rem 1.15rem;margin:1.25rem 0}
@@ -161,6 +157,24 @@
     white-space:nowrap;text-align:right}
   .up-empty{color:var(--faint);font-size:.9rem;margin:0}
 
+  /* pop-outs: what each item actually involves, folded away until asked for */
+  details.more{grid-column:2;margin:.45rem 0 0}
+  details.more>summary{list-style:none;cursor:pointer;display:inline-block;
+    font-family:ui-monospace,Menlo,monospace;font-size:.68rem;letter-spacing:.04em;
+    color:var(--accent);padding:.1rem 0}
+  details.more>summary::-webkit-details-marker{display:none}
+  details.more>summary::before{content:"+ ";font-weight:700}
+  details.more[open]>summary::before{content:"– "}
+  details.more>summary:hover{text-decoration:underline}
+  .more-body{margin:.55rem 0 .3rem;padding:.8rem .95rem;background:var(--surface-2);
+    border:1px solid var(--rule);border-left:2px solid var(--brand);border-radius:0 3px 3px 0}
+  .more-body p{margin:0 0 .6rem;font-size:.89rem;line-height:1.55}
+  .more-body p:last-child{margin-bottom:0}
+  .more-body ul{margin:0 0 .6rem;padding-left:1.1rem}
+  .more-body ul:last-child{margin-bottom:0}
+  .more-body li{margin-bottom:.35rem;font-size:.89rem;line-height:1.5}
+  .more-body a{color:var(--accent)}
+
   ul.plain{margin:0;padding-left:1.15rem}
   ul.plain li{margin-bottom:.5rem;font-size:.93rem}
   ul.plain li:last-child{margin-bottom:0}
@@ -196,7 +210,11 @@
     @page{margin:14mm}
     body{background:#FFF;font-size:10.5pt;padding:0}
     .wrap{max-width:none}
-    .actions,.file .arrow,.inline-up,#upload .up-form{display:none}
+    .actions,.inline-up,#upload .up-form{display:none}
+    .layout{display:block}
+    .side{position:static;display:block;margin-top:1rem}
+    details.more>summary{display:none}
+    .more-body{background:none;border:none;border-left:2px solid #AEBBC6;padding:.2rem 0 .2rem .7rem}
     .up-row{page-break-inside:avoid}
     @page{margin:14mm}
     header{padding-top:0;page-break-after:avoid}
@@ -205,8 +223,6 @@
     section{page-break-inside:avoid;margin-bottom:1.1rem}
     .panel,.callout{box-shadow:none;page-break-inside:avoid}
     .dl-item{page-break-inside:avoid}
-    .file{border-color:#D0D8DF}
-    .file::after{content:" (download from your packet page)";font-size:8pt;color:#6B7B8A}
     footer{page-break-inside:avoid}
     a{text-decoration:none;color:inherit}
   }
@@ -246,22 +262,101 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 const MILESTONES = [
   { off:-35, name:"Signed Speaker Agreement",  items:["agreement"], up:"other",
     tpl:"4. Speaker Agreement.docx", tplLabel:"Agreement",
-    note:"Needed before NACBA can publish any marketing for the program." },
+    note:"Needed before NACBA can publish any marketing for the program.",
+    detail:
+      "<p>Two commitments in the agreement shape your materials, so they are worth " +
+      "knowing before you start writing.</p><ul>" +
+      "<li><b>NACBA programs are educational, not promotional.</b> Please don't " +
+      "disparage or endorse any vendor, product, or service. If a tool is genuinely " +
+      "relevant, describe it as your own practice choice — and if an attendee asks " +
+      "what you use, answer briefly and return to the substance.</li>" +
+      "<li><b>Respectful participation.</b> Speakers agree to conduct themselves " +
+      "consistently with NACBA's Diversity, Equity, and Inclusion Policy: respectful " +
+      "treatment of everyone in the room, inclusive examples and humour, and language " +
+      "about debtors that doesn't stigmatise them for seeking relief the law provides.</li>" +
+      "<li>If you have a sponsorship, referral arrangement, ownership interest, or any " +
+      "compensation from a vendor you expect to mention, please disclose it in advance.</li>" +
+      "</ul><p>The agreement also covers recording and NACBA's right to offer the " +
+      "session in its online store afterwards.</p>" },
+
   { off:-21, name:"Biography and headshot",    items:["bio","headshot"], up:"bio",
     tpl:"2. Speaker Biography Template.docx", tplLabel:"Bio template",
-    note:"Bio on the NACBA template. Headshot as a separate high-resolution file." },
+    note:"Bio on the NACBA template. Headshot as a separate high-resolution file.",
+    detail:
+      "<p><b>Your biography</b> — one page or less, around 150–250 words, written in " +
+      "the third person. It is read aloud when you are introduced and printed in the " +
+      "attendee materials. If you copy it from your firm website, add the firm name " +
+      "and city. The template has a field for how your name is pronounced; please " +
+      "use it.</p>" +
+      "<p><b>Your headshot</b></p><ul>" +
+      "<li>High resolution — at least 1200 pixels on the shorter side.</li>" +
+      "<li>JPG or PNG. Please don't send one embedded in a Word or PDF file.</li>" +
+      "<li>Professional, current, cropped to head and shoulders.</li></ul>" +
+      "<p>Your headshot is used for NACBA advertising and promotion only. It is stored " +
+      "in our internal marketing files and is never included in the materials attendees " +
+      "download.</p>" },
+
   { off:-14, name:"Written materials — due",   items:["outline"], up:"outline",
     tpl:"3. Webinar Outline Template.docx", tplLabel:"Outline template",
-    note:"Your branded outline. This is the target date, which leaves room for a revision." },
+    note:"Your branded outline. This is the target date, which leaves room for a revision.",
+    detail:
+      "<ul><li>Submit final written materials as a single PDF, built on the outline " +
+      "template.</li>" +
+      "<li>Don't submit photocopies of pleadings with sensitive material blacked out by " +
+      "hand — provide PDF copies and use the PDF redaction feature.</li>" +
+      "<li>Check that scanned exhibits are neither too dark nor blurred.</li>" +
+      "<li>A table of contents, bookmarks, and page numbers are welcome but not " +
+      "required.</li>" +
+      "<li>If any material comes from a copyrighted publication, tell your coordinator " +
+      "early — NACBA must obtain written permission to reprint, and that takes time. " +
+      "There is a <a href=\"templates/5.%20Reprint%20Request%20Form.docx\" download>" +
+      "reprint request form</a> for it.</li></ul>" +
+      "<p>All submissions are reviewed by NACBA's education chairs for content and " +
+      "style, and may occasionally be returned for revision. That is why this target " +
+      "date sits a week ahead of the firm one.</p>" },
+
   { off: -7, name:"Written materials — final", items:[],
-    note:"Set by CLE filing requirements. This one cannot move." },
+    note:"Set by CLE filing requirements. This one cannot move.",
+    detail:
+      "<p>NACBA files continuing legal education applications on your program's behalf, " +
+      "and those filings have state-imposed lead times. Materials arriving after this " +
+      "date may prevent the program being accredited in every state where we have " +
+      "applied — which affects every attorney who registered expecting credit.</p>" +
+      "<p>If you are going to be late, tell your coordinator as early as you can. There " +
+      "is usually something we can do a week out and nothing we can do the day before.</p>" },
+
   { off:-14, name:"PowerPoint — due",          items:["powerpoint"], up:"powerpoint",
     tpl:"6. NACBA PowerPoint Template.pptx", tplLabel:"PowerPoint template",
-    note:"Optional, but encouraged. NACBA template provided, or your own carrying our logo." },
+    note:"Optional, but encouraged. NACBA template provided, or your own carrying our logo.",
+    detail:
+      "<p>A presentation is encouraged but not mandatory. You may use the NACBA " +
+      "template, or your own — so long as it carries the NACBA logo and the webinar " +
+      "date.</p><ul>" +
+      "<li>Aim for readability over density: 20pt minimum, high contrast, no more than " +
+      "about six lines on a slide.</li>" +
+      "<li>Test every hyperlink before you submit. Staff test them again, but yours is " +
+      "the version attendees see.</li>" +
+      "<li>Your slides are delivered to attendees as a separate file, not folded into " +
+      "the compiled PDF of written materials.</li></ul>" },
+
   { off: -1, name:"Technology check",          items:[],
-    note:"Microphone, camera, lighting, connection, and a professional background." },
+    note:"Microphone, camera, lighting, connection, and a professional background.",
+    detail:
+      "<p>Your coordinator will arrange a short call to check microphone, camera, " +
+      "lighting, internet connection, and your background. If you have a NACBA-branded " +
+      "virtual background you would like to use, this is the moment to test it.</p>" +
+      "<p>Please also confirm at this point how your name should be pronounced and the " +
+      "title you prefer to be introduced with.</p>" },
+
   { off:  0, name:"Your webinar",              items:[],
-    note:"Please join 30 minutes early. Staff will admit you for a final check." }
+    note:"Please join 30 minutes early. Staff will admit you for a final check.",
+    detail:
+      "<p>Join 30 minutes before the start time. We will admit you early for a final " +
+      "check of audio, video, and screen sharing, and confirm the running order.</p>" +
+      "<p>Attendee questions come through Zoom's Q&amp;A rather than chat, and your " +
+      "moderator will bring them to you — grouped where several people have asked the " +
+      "same thing. Your moderator keeps time and will signal discreetly as you approach " +
+      "the end of your segment.</p>" }
 ];
 
 const UPLOAD_KINDS = [
@@ -274,18 +369,6 @@ const UPLOAD_KINDS = [
 const MAX_BYTES = 10 * 1024 * 1024;
 const kb = n => n >= 1048576 ? (n/1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n/1024)) + " KB";
 
-const TEMPLATES = [
-  { file:"2. Speaker Biography Template.docx", ext:"DOCX",
-    name:"Biography template", desc:"One page or less. Includes name pronunciation." },
-  { file:"3. Webinar Outline Template.docx", ext:"DOCX",
-    name:"Written materials outline", desc:"Branded cover, goals and takeaways, resources." },
-  { file:"4. Speaker Agreement.docx", ext:"DOCX",
-    name:"Speaker Agreement", desc:"Sign and return before marketing is published." },
-  { file:"6. NACBA PowerPoint Template.pptx", ext:"PPTX",
-    name:"PowerPoint template", desc:"Optional. Your own template is fine if it carries our logo." },
-  { file:"5. Reprint Request Form.docx", ext:"DOCX",
-    name:"Reprint request form", desc:"Only if your materials quote a copyrighted publication." }
-];
 
 const app = document.getElementById("app");
 const brand = () => '<span class="logo-plate"><img src="assets/nacba-logo.png" ' +
@@ -327,17 +410,20 @@ function render(d) {
           '" download>↓ ' + esc(m.tplLabel) + "</a>" : "";
       const up = m.up
         ? ' <button class="inline-up" data-jump="' + esc(m.up) + '">↑ Upload</button>' : "";
+      const more = m.detail
+        ? '<details class="more"><summary>What this involves</summary>' +
+          '<div class="more-body">' + m.detail + "</div></details>" : "";
       return '<div class="dl-item ' + cls + '"><span class="dot"></span>' +
         '<span class="dl-name">' + esc(m.name) + badge + "</span>" +
         '<span class="dl-date">' + esc(FMT_DATE.format(m.due)) + "<br>" + esc(rel) + "</span>" +
-        '<span class="dl-note">' + esc(m.note) + tpl + up + "</span></div>";
+        '<span class="dl-note">' + esc(m.note) + tpl + up + "</span>" + more + "</div>";
     }).join("");
 
   /* co-panelists */
   const co = (d.co_speakers || []);
   const coPanel = co.length
     ? "<section><h2>Your co-panelists</h2>" +
-      '<p class="sub">Please reach out directly to plan the session — NACBA does not ' +
+      '<p class="sub">Reach out directly to plan the session — NACBA does not ' +
       "schedule your planning call.</p><div class=\"panel\">" +
       co.map(c => {
         const bits = [c.preferred_title, c.firm].filter(Boolean).join(" · ");
@@ -364,6 +450,27 @@ function render(d) {
         esc(FMT_DATE.format(new Date(u.uploaded_at))) + "</span></div>").join("")
     : '<p class="up-empty">Nothing sent yet.</p>';
 
+  const nacbaPanel =
+    "<section><h2>What NACBA will do</h2><div class=\"panel\"><ul class=\"plain\">" +
+    "<li>Promote the program to our membership, including your name, headshot, and firm.</li>" +
+    "<li>Send you branded “I am speaking at NACBA” graphics and post copy at least two " +
+    "weeks out, for your own social media.</li>" +
+    "<li>Run a technology check with you beforehand.</li>" +
+    "<li>Record the session and make it available in the NACBA store.</li>" +
+    "</ul></div></section>";
+
+  const detailsPanel =
+    "<section><h2>Details we hold for you</h2><div class=\"panel\"><dl class=\"kv\">" +
+    "<dt>Name</dt><dd>" + esc(d.speaker.full_name) + "</dd>" +
+    (d.speaker.preferred_title ? "<dt>Title</dt><dd>" + esc(d.speaker.preferred_title) + "</dd>" : "") +
+    (d.speaker.firm ? "<dt>Firm</dt><dd>" + esc(d.speaker.firm) + "</dd>" : "") +
+    (d.speaker.email ? "<dt>Email</dt><dd>" + esc(d.speaker.email) + "</dd>" : "") +
+    (d.speaker.pronunciation ? "<dt>Say</dt><dd>" + esc(d.speaker.pronunciation) + "</dd>" : "") +
+    "</dl></div>" +
+    '<p class="sub" style="margin:.7rem 0 0">Anything wrong — especially how your name ' +
+    "should be pronounced — please tell your coordinator. This is what we use to " +
+    "introduce you on air.</p></section>";
+
   const uploadPanel =
     "<section id=\"upload\"><h2>Send us your materials</h2>" +
     '<p class="sub">Upload here and it reaches your coordinator directly. Up to 10 MB per file. ' +
@@ -379,11 +486,6 @@ function render(d) {
     '</div><div class="up-sent"><p class="up-head">What you have sent</p>' +
     '<div id="up-list">' + sentList + "</div></div></div></section>";
 
-  const files = TEMPLATES.map(t =>
-    '<a class="file" href="templates/' + encodeURIComponent(t.file) + '" download>' +
-    '<span class="ext">' + t.ext + '</span><span><span class="fname">' + esc(t.name) +
-    '</span><br><span class="fdesc">' + esc(t.desc) + "</span></span>" +
-    '<span class="arrow">↓</span></a>').join("");
 
   const late = MILESTONES.some(m =>
     m.items.length && addDays(ev, m.off) < today && !m.items.every(i => recv[i]?.received));
@@ -401,83 +503,22 @@ function render(d) {
 
     (late ? '<div class="callout warn"><span class="label">Something is overdue</span>' +
       "<p>One or more items below have passed their date. If you have already sent them, " +
-      "they may simply not be logged yet — a quick note to your coordinator will sort it out.</p></div>" : "") +
+      "they may simply not be logged yet — a quick note to your coordinator will sort it " +
+      "out.</p></div>" : "") +
 
-    "<section><h2>What we need, and when</h2>" +
-    '<p class="sub">Dates are specific to your program. Green means NACBA has it.</p>' +
-    '<div class="panel"><div class="dl">' + rows + "</div></div></section>" +
+    '<div class="layout"><div class="main">' +
 
-    '<div class="callout"><span class="label">The one date that cannot move</span>' +
-    "<p>Written materials are final one week before the webinar. That deadline is set by " +
-    "continuing legal education filing requirements, not by NACBA. Materials arriving after it " +
-    "may prevent the program being accredited in every state where we have applied.</p></div>" +
+      "<section><h2>What we need, and when</h2>" +
+      '<p class="sub">Dates are specific to your program. Open <em>what this involves</em> ' +
+      "on any item for the detail. Green means NACBA has it.</p>" +
+      '<div class="panel"><div class="dl">' + rows + "</div></div>" +
+      '<div class="callout"><span class="label">The one date that cannot move</span>' +
+      "<p>Written materials are final one week before the webinar — a deadline set by " +
+      "continuing legal education filing requirements, not by NACBA.</p></div></section>" +
 
-    uploadPanel + coPanel +
+      uploadPanel +
 
-    "<section><h2>Your templates</h2>" +
-    '<p class="sub">Please use these — consistent materials are how NACBA keeps a professional ' +
-    "standard across every program.</p>" + '<div class="files">' + files + "</div></section>" +
-
-    "<section><h2>Your headshot</h2><div class=\"panel\"><ul class=\"plain\">" +
-    "<li>High resolution — at least 1200 pixels on the shorter side.</li>" +
-    "<li>JPG or PNG. Please don't send one embedded in a Word or PDF file.</li>" +
-    "<li>Professional, current, cropped to head and shoulders.</li></ul>" +
-    '<p class="fine">Your headshot is used for NACBA advertising and promotion only. It is ' +
-    "stored in our internal marketing files and is never included in the materials attendees " +
-    "download.</p></div></section>" +
-
-    "<section><h2>Materials standards</h2><div class=\"panel\"><ul class=\"plain\">" +
-    "<li>Submit final written materials as a single PDF, using the outline template above.</li>" +
-    "<li>Keep your biography to one page. If it's taken from your firm website, add the firm " +
-    "name and city.</li>" +
-    "<li>Don't submit photocopies of pleadings with sensitive material blacked out by hand — " +
-    "provide PDF copies and use the PDF redaction feature.</li>" +
-    "<li>Check that scanned exhibits are neither too dark nor blurred.</li>" +
-    "<li>A table of contents, bookmarks, and page numbers are welcome but not required.</li>" +
-    "<li>If any material comes from a copyrighted publication, tell your coordinator early — " +
-    "NACBA must obtain written permission to reprint, and that takes time.</li></ul>" +
-    '<p class="fine">All submissions are reviewed by NACBA’s education chairs for content ' +
-    "and style, and may occasionally be returned for revision. That's why there's a target date " +
-    "a week before the firm one.</p></div></section>" +
-
-    "<section><h2>What NACBA will do</h2><div class=\"panel\"><ul class=\"plain\">" +
-    "<li>Promote the program to our membership, including your name, headshot, and firm.</li>" +
-    "<li>Send you branded “I am speaking at NACBA” graphics and suggested post copy at " +
-    "least two weeks before the program, for your own social media.</li>" +
-    "<li>Run a technology check with you — microphone, camera, lighting, connection, and " +
-    "background.</li>" +
-    "<li>Record the session and make it available in the NACBA store.</li></ul></div></section>" +
-
-    "<section><h2>Program neutrality and conduct</h2><div class=\"panel\">" +
-    "<p>Two commitments in your Speaker Agreement shape your materials, so they're worth " +
-    "knowing before you start writing.</p><ul class=\"plain\">" +
-    "<li><b>NACBA programs are educational, not promotional.</b> Please don't disparage or " +
-    "endorse any vendor, product, or service. If a tool is genuinely relevant, describe it as " +
-    "your own practice choice — and if an attendee asks what you use, answer briefly and " +
-    "return to the substance.</li>" +
-    "<li><b>Respectful participation.</b> Speakers agree to conduct themselves consistently " +
-    "with NACBA's Diversity, Equity, and Inclusion Policy: respectful treatment of everyone " +
-    "in the room, inclusive examples and humor, and language about debtors that doesn't " +
-    "stigmatize them for seeking relief the law provides.</li>" +
-    "<li>If you have a sponsorship, referral arrangement, ownership interest, or any " +
-    "compensation from a vendor you expect to mention, please disclose it to us in " +
-    "advance.</li></ul></div></section>" +
-
-    "<section><h2>On the day</h2><div class=\"panel\">" +
-    "<p>Please join 30 minutes before the start time. We'll admit you early for a final check " +
-    "of audio, video, and screen sharing. Attendee questions come through Zoom's Q&amp;A rather " +
-    "than chat, and your moderator will bring them to you.</p></div></section>" +
-
-    "<section><h2>Details we hold for you</h2><div class=\"panel\"><dl class=\"kv\">" +
-    "<dt>Name</dt><dd>" + esc(d.speaker.full_name) + "</dd>" +
-    (d.speaker.preferred_title ? "<dt>Title</dt><dd>" + esc(d.speaker.preferred_title) + "</dd>" : "") +
-    (d.speaker.firm ? "<dt>Firm</dt><dd>" + esc(d.speaker.firm) + "</dd>" : "") +
-    (d.speaker.email ? "<dt>Email</dt><dd>" + esc(d.speaker.email) + "</dd>" : "") +
-    (d.speaker.pronunciation ? "<dt>Say</dt><dd>" + esc(d.speaker.pronunciation) + "</dd>" : "") +
-    "</dl></div>" +
-    '<p class="sub" style="margin-top:.8rem">Anything wrong or missing — especially how your ' +
-    "name should be pronounced — please tell your coordinator. This is what we use to introduce " +
-    "you on air.</p></section>" +
+    '</div><aside class="side">' + coPanel + nacbaPanel + detailsPanel + "</aside></div>" +
 
     '<div class="actions"><button class="btn" id="print">Save this page as a PDF</button>' +
     '<span class="hint">Everything above, with your dates, as a file you can keep.</span></div>' +
@@ -547,6 +588,18 @@ function render(d) {
 }
 
 let tok = "", packet = null;
+
+/* A collapsed pop-out would print as a missing paragraph, so open them all
+   for the printed copy and put them back afterwards. */
+let reopened = [];
+window.addEventListener("beforeprint", () => {
+  reopened = [...document.querySelectorAll("details.more:not([open])")];
+  reopened.forEach(d => { d.open = true; });
+});
+window.addEventListener("afterprint", () => {
+  reopened.forEach(d => { d.open = false; });
+  reopened = [];
+});
 
 (async function () {
   tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");

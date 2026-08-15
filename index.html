@@ -569,6 +569,18 @@ url || `[CREATE THE PACKET LINK FIRST — then copy this email again]`, ``,
   return { text, html };
 }
 
+function previewInvitation(p, ps) {
+  const { html } = emailParts(p, ps);
+  const w = window.open("", "_blank");
+  if (!w) { toast("Allow pop-ups to preview the email", true); return; }
+  w.document.write(
+    "<!doctype html><meta charset='utf-8'><title>Invitation email — preview</title>" +
+    "<div style=\"font:14px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;background:#0B243A;" +
+    "color:#fff;padding:10px 16px\">Select all and copy, then paste into your email. " +
+    "This page is a preview — it is not sent from here.</div>" + html);
+  w.document.close();
+}
+
 async function copyInvitation(p, ps) {
   const { text, html } = emailParts(p, ps);
   try {
@@ -1056,6 +1068,10 @@ function wire(){
   on("[data-email]","click",el=>{
     const p = programs.find(x => x.id === view.id);
     copyInvitation(p, p.program_speakers.find(x => x.id === el.getAttribute("data-email")));
+  });
+  on("[data-emailprev]","click",el=>{
+    const p = programs.find(x => x.id === view.id);
+    previewInvitation(p, p.program_speakers.find(x => x.id === el.getAttribute("data-emailprev")));
   });
 
   on("[data-cat]","click",el=>toggleCat(

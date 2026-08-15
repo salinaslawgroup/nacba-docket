@@ -278,6 +278,13 @@ const GATE_LABELS = [
   { key:"runofshow", label:"Run of show" }
 ];
 const CONFIRMATIONS = ["invited","asked","confirmed","declined"];
+const PROGRAM_KINDS = [
+  { id:"paid",              label:"Paid webinar (CLE)" },
+  { id:"vendor",            label:"Vendor program (sponsored, free, no CLE)" },
+  { id:"marketing_minute",  label:"BK Marketing Minute" },
+  { id:"bk_talk",           label:"BK Talk" }
+];
+const kindLabel = k => (PROGRAM_KINDS.find(x => x.id === (k||"paid")) || {}).label || "";
 const SPEAKER_TYPES = [
   { id:"",                    label:"— not recorded —" },
   { id:"debtor_attorney",     label:"Debtor's attorney" },
@@ -340,7 +347,7 @@ function renderGate(msg, kind) {
 /* ================= data ================= */
 async function loadData() {
   const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes] = await Promise.all([
-    sb.from("programs").select(`id, slug, event_date, title, description, note,
+    sb.from("programs").select(`id, slug, event_date, title, description, note, kind,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, address, email, phone, pronunciation,
                    headshot_location, bio_location, speaker_type ),
@@ -596,7 +603,11 @@ function newProgramForm(){
     "<span>docket generates on save</span></p>" +
     '<div class="form"><div class="form-row">' +
     '<div class="field"><label class="field-label" for="np-date">Event date</label>' +
-    '<input type="date" id="np-date" required></div></div>' +
+    '<input type="date" id="np-date" required></div>' +
+    '<div class="field"><label class="field-label" for="np-kind">Program type</label>' +
+    '<select id="np-kind">' + PROGRAM_KINDS.map(k =>
+      '<option value="' + k.id + '">' + esc(k.label) + "</option>").join("") +
+    "</select></div></div>" +
     '<div class="field"><label class="field-label" for="np-title">Program title</label>' +
     '<input type="text" id="np-title" placeholder="Working title is fine" required></div>' +
     '<div class="field"><label class="field-label" for="np-desc">Description / objectives</label>' +
@@ -719,7 +730,14 @@ function editProgramForm(p){
   return '<section class="panel"><p class="panel-head"><span>Edit program</span>'+
     "<span>docket shifts with the date</span></p><div class=\"form\">"+
     '<div class="form-row"><div class="field"><label class="field-label" for="ep-date">Event date</label>'+
-    '<input type="date" id="ep-date" value="'+esc(p.event_date)+'"></div></div>'+
+    '<input type="date" id="ep-date" value="'+esc(p.event_date)+'"></div>'+
+    '<div class="field"><label class="field-label" for="ep-kind">Program type</label>'+
+    '<select id="ep-kind">'+PROGRAM_KINDS.map(k=>'<option value="'+k.id+'"'+
+      ((p.kind||"paid")===k.id?" selected":"")+">"+esc(k.label)+"</option>").join("")+
+    "</select></div></div>"+
+    '<p class="sub" style="margin:-.4rem 0 0;font-size:.85rem;color:var(--faint)">'+
+    "Changing the type does not rewrite an existing docket — the tasks already "+
+    "generated stay as they are.</p>"+
     '<div class="field"><label class="field-label" for="ep-title">Program title</label>'+
     '<input type="text" id="ep-title" value="'+esc(p.title)+'"></div>'+
     '<div class="field"><label class="field-label" for="ep-desc">Description / objectives</label>'+
@@ -753,7 +771,7 @@ function editSpeakerForm(ps){
       ((s.speaker_type||"")===t.id?" selected":"")+">"+esc(t.label)+"</option>").join("")+
     "</select></div>"+
     '<div class="field"><label class="field-label" for="es-say">Name pronunciation</label>'+
-    '<input type="text" id="es-say" value="'+esc(s.pronunciation)+'" placeholder="MAG-duh-leen"></div></div>'+
+    '<input type="text" id="es-say" value="'+esc(s.pronunciation)+'" placeholder="e.g. KAT-rin duh-LUCA"></div></div>'+
     '<div class="form-row">'+
     '<div class="field"><label class="field-label" for="es-head">Headshot location</label>'+
     '<input type="text" id="es-head" value="'+esc(s.headshot_location)+'" placeholder="Internal marketing files — never the attendee ZIP"></div>'+
@@ -834,6 +852,7 @@ async function createProgram(){
   if (!date || !title) { toast("Date and title are both required", true); return; }
   await mutate(()=>sb.from("programs").insert({
     slug: slugFor(date,title), event_date: date, title,
+    kind: val("np-kind") || "paid",
     description: val("np-desc"), note: val("np-note")
   }), "Program created with its docket");
   view = { ...view, creating:false, tab:"upcoming" };
@@ -845,7 +864,8 @@ async function saveProgram(id){
   if (!date || !title) { toast("Date and title are both required", true); return; }
   view.edit=false;
   await mutate(()=>sb.from("programs").update({
-    event_date: date, title, description: val("ep-desc"), note: val("ep-note")
+    event_date: date, title, kind: val("ep-kind") || "paid",
+    description: val("ep-desc"), note: val("ep-note")
   }).eq("id",id));
 }
 

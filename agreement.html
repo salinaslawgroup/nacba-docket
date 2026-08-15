@@ -167,17 +167,76 @@ function notFound(msg) {
     '<a href="mailto:admin@nacba.com">admin@nacba.com</a>.</p></div>';
 }
 
+function neutralityTerms() {
+  return "<section><h2>Vendors, Products, and Services</h2>" +
+    "<p>NACBA programs are educational, not promotional. Our members rely on NACBA precisely " +
+    "because we do not take sides on commercial products, and that neutrality only holds if " +
+    "every speaker observes it. I agree that:</p><ul>" +
+    "<li>I will not disparage any vendor, product, or service, or any identifiable company " +
+    "or individual, in my presentation or in my written materials.</li>" +
+    "<li>I will not promote, endorse, market, or sell any vendor, product, or service — " +
+    "including my own, and including any in which I hold a financial interest.</li>" +
+    "<li>Where a tool is genuinely relevant to the substance of the program, I may describe " +
+    "it only as my own practice choice — “this is what I use” — without recommending that " +
+    "attendees adopt it and without comparing it to alternatives.</li>" +
+    "<li>If an attendee asks directly what I use, I may answer briefly and factually, and " +
+    "will then return to the substance of the program. I will not treat the question as an " +
+    "invitation to promote.</li>" +
+    "<li>I will not make comparative claims about competing products, and I will not comment " +
+    "on any vendor's legal compliance, ethics, or trustworthiness.</li>" +
+    "<li>I will disclose to NACBA in advance any sponsorship, referral arrangement, " +
+    "ownership interest, or compensation I have from any vendor I expect to mention.</li>" +
+    "</ul>" +
+    '<div class="callout"><span class="label">Why this matters</span>' +
+    "<p>Attendees are practicing lawyers making purchasing decisions for their firms. A " +
+    "recommendation from a NACBA podium carries weight, and a criticism can carry legal risk " +
+    "for both the speaker and NACBA.</p>" +
+    "<p>Nothing here prevents you from teaching how a category of tool works, or from " +
+    "answering an honest question honestly. It prevents the program from becoming a sales " +
+    "pitch or a grievance.</p></div></section>";
+}
+
+/* A sponsor has paid to present their own product, so the standard
+   neutrality clause cannot apply as written. What survives is the part
+   that protects attendees: teach something, disclose the arrangement,
+   and do not attack competitors from a NACBA podium. */
+function vendorProgramTerms() {
+  return "<section><h2>Sponsored Program Terms</h2>" +
+    "<p>This is a sponsored program. You may present and discuss your own product or " +
+    "service — that is what the arrangement is for. In exchange, NACBA asks that the " +
+    "program remain worth an attendee's time. I agree that:</p><ul>" +
+    "<li>The program will teach something useful about the subject, not consist solely of " +
+    "a product demonstration.</li>" +
+    "<li>I will not disparage any competitor, product, or service, and will not comment on " +
+    "any competitor's legal compliance, ethics, or trustworthiness.</li>" +
+    "<li>I will not present my product as endorsed, recommended, or vetted by NACBA. " +
+    "Sponsorship is not endorsement, and NACBA will say so to attendees.</li>" +
+    "<li>Claims I make about outcomes, savings, or results will be ones I can support.</li>" +
+    "<li>I understand NACBA will disclose the sponsorship to attendees at the start of the " +
+    "program, and that no continuing legal education credit is offered.</li>" +
+    "<li>NACBA reviews the presentation before the program and may ask for changes where " +
+    "the balance between teaching and selling needs adjusting.</li>" +
+    "</ul>" +
+    '<div class="callout"><span class="label">Why NACBA asks for this</span>' +
+    "<p>Members attend on the strength of NACBA's name. A sponsored program that turns out " +
+    "to be only a sales pitch costs NACBA more than the sponsorship is worth, which is why " +
+    "the teaching requirement is in the agreement rather than left to good intentions.</p>" +
+    "</div></section>";
+}
+
 function render(d) {
   const s = d.speaker || {}, p = d.program || {};
   const ev = parseISO(p.event_date);
   const due14 = addDays(ev, -14), due7 = addDays(ev, -7);
-  const blank = t => '<dd class="blank">' + t + "</dd>";
+  const isVendor = (p.kind === 'vendor');
 
   app.innerHTML =
     "<header>" + brand() +
     '<p class="eyebrow">Education Committee</p>' +
     "<h1>Speaker Agreement</h1>" +
-    '<p class="lede">Consent, licensing, and materials. Please review, sign, and return.</p>' +
+    '<p class="lede">' + (isVendor
+      ? "Sponsored program — consent, licensing, and materials. Please review, sign, and return."
+      : "Consent, licensing, and materials. Please review, sign, and return.") + "</p>" +
     "</header>" +
 
     '<div class="party"><dl class="kv">' +
@@ -191,7 +250,7 @@ function render(d) {
       '<dt>Phone</dt><dd><input id="f-phone" type="text" value="' + esc(s.phone || "") +
         '" placeholder="Direct line or mobile"></dd>' +
       '<dt>Say my name</dt><dd><input id="f-say" type="text" value="' +
-        esc(s.pronunciation || "") + '" placeholder="e.g. MAG-duh-leen RAY-ess"></dd>' +
+        esc(s.pronunciation || "") + '" placeholder="e.g. KAT-rin duh-LUCA"></dd>' +
     "</dl>" +
     '<p class="fill-note">These go on your record at NACBA, so they carry across to your ' +
     "biography and your introduction. Save before you print.</p>" +
@@ -237,43 +296,21 @@ function render(d) {
     "restrictions, and that they do not infringe upon any patent, trademark, or copyright, " +
     "nor are they slanderous, libelous, or an invasion of any person's right of privacy or " +
     "publicity.</li>" +
-    "<li>I will provide all written materials necessary to complete the MCLE applications, " +
-    "if any, and my presentation no later than <b>" + esc(FMT_SHORT.format(due14)) +
-    "</b>, and in no event later than <b>" + esc(FMT_SHORT.format(due7)) + "</b>.</li>" +
-    "</ul>" +
+    "<li>I will provide my presentation and all written materials no later than <b>" +
+      esc(FMT_SHORT.format(due14)) + "</b>, and in no event later than <b>" +
+      esc(FMT_SHORT.format(due7)) + "</b>.</li></ul>" +
+      '<div class="callout"><span class="label">Why that final date is firm</span>' +
+      "<p>NACBA reviews every set of materials, compiles them, and distributes them to the " +
+      "membership before the program. " + (isVendor
+        ? "This program is presented under a sponsorship arrangement, is offered free to " +
+          "NACBA members, and carries no continuing legal education credit. NACBA will " +
+          "disclose the sponsorship to attendees at the start of the program."
+        : "Where the program carries CLE credit, it is also when NACBA files the " +
+          "accreditation applications, and those filings have state-imposed lead times.") +
+      "</p><p>Materials received after " + esc(FMT_SHORT.format(due7)) +
+      " may not make it into the attendee package at all.</p></div></section>" +
 
-    '<div class="callout"><span class="label">Why that final date is firm</span>' +
-    "<p>NACBA files continuing legal education applications on your program's behalf, and " +
-    "those filings have state-imposed lead times. Materials received after " +
-    esc(FMT_SHORT.format(due7)) + " may prevent the program being accredited in every state " +
-    "where we have applied.</p></div></section>" +
-
-    "<section><h2>Vendors, Products, and Services</h2>" +
-    "<p>NACBA programs are educational, not promotional. Our members rely on NACBA precisely " +
-    "because we do not take sides on commercial products, and that neutrality only holds if " +
-    "every speaker observes it. I agree that:</p><ul>" +
-    "<li>I will not disparage any vendor, product, or service, or any identifiable company " +
-    "or individual, in my presentation or in my written materials.</li>" +
-    "<li>I will not promote, endorse, market, or sell any vendor, product, or service — " +
-    "including my own, and including any in which I hold a financial interest.</li>" +
-    "<li>Where a tool is genuinely relevant to the substance of the program, I may describe " +
-    "it only as my own practice choice — “this is what I use” — without recommending that " +
-    "attendees adopt it and without comparing it to alternatives.</li>" +
-    "<li>If an attendee asks directly what I use, I may answer briefly and factually, and " +
-    "will then return to the substance of the program. I will not treat the question as an " +
-    "invitation to promote.</li>" +
-    "<li>I will not make comparative claims about competing products, and I will not comment " +
-    "on any vendor's legal compliance, ethics, or trustworthiness.</li>" +
-    "<li>I will disclose to NACBA in advance any sponsorship, referral arrangement, " +
-    "ownership interest, or compensation I have from any vendor I expect to mention.</li>" +
-    "</ul>" +
-    '<div class="callout"><span class="label">Why this matters</span>' +
-    "<p>Attendees are practicing lawyers making purchasing decisions for their firms. A " +
-    "recommendation from a NACBA podium carries weight, and a criticism can carry legal risk " +
-    "for both the speaker and NACBA.</p>" +
-    "<p>Nothing here prevents you from teaching how a category of tool works, or from " +
-    "answering an honest question honestly. It prevents the program from becoming a sales " +
-    "pitch or a grievance.</p></div></section>" +
+    (isVendor ? vendorProgramTerms() : neutralityTerms()) +
 
     "<section><h2>Respectful Participation</h2>" +
     "<p>NACBA's members and the clients they serve are diverse, and our programs are " +

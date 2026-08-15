@@ -59,6 +59,17 @@
   .kv dt{color:var(--faint);font-size:.85rem;padding-top:.06rem}
   .kv dd{margin:0}
   .kv dd.blank{color:var(--faint);font-style:italic}
+  .kv dd input{font:inherit;font-size:.95rem;width:100%;max-width:26rem;
+    padding:.3rem .45rem;border:1px solid var(--rule-strong);border-radius:3px;
+    background:var(--surface-2);color:var(--ink)}
+  .kv dd textarea{font:inherit;font-size:.95rem;width:100%;max-width:26rem;min-height:3.4rem;
+    padding:.35rem .45rem;border:1px solid var(--rule-strong);border-radius:3px;
+    background:var(--surface-2);color:var(--ink);resize:vertical;line-height:1.45}
+  .fill-note{font-size:.88rem;color:var(--muted);margin:.85rem 0 0}
+  .fill-actions{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin:.85rem 0 0}
+  .save-msg{font-size:.88rem;margin:0}
+  .save-msg.ok{color:var(--ok,#2A6650)}
+  .save-msg.err{color:var(--critical)}
 
   .callout{background:var(--accent-soft);border-left:3px solid var(--brand);
     border-radius:0 4px 4px 0;padding:.95rem 1.1rem;margin:1.1rem 0}
@@ -103,7 +114,9 @@
     @page{margin:16mm}
     body{background:#FFF;font-size:10pt;line-height:1.5;padding:0}
     .wrap{max-width:none}
-    .actions{display:none}
+    .actions,.fill-actions,.fill-note{display:none}
+    .kv dd input,.kv dd textarea{border:none;border-bottom:1px solid #AEBBC6;border-radius:0;
+      background:none;padding:0 0 1px;max-width:none;width:100%;resize:none;min-height:0}
     header{padding-top:0}
     h1{font-size:18pt}
     h2{font-size:11.5pt;margin:1.1rem 0 .4rem;page-break-after:avoid}
@@ -170,11 +183,20 @@ function render(d) {
     '<div class="party"><dl class="kv">' +
       "<dt>Speaker</dt><dd>" + esc(s.full_name || "") + "</dd>" +
       (s.preferred_title ? "<dt>Title</dt><dd>" + esc(s.preferred_title) + "</dd>" : "") +
-      "<dt>Firm</dt>" + (s.firm ? "<dd>" + esc(s.firm) + "</dd>" : blank("please complete")) +
-      "<dt>Email</dt>" + (s.email ? "<dd>" + esc(s.email) + "</dd>" : blank("please complete")) +
-      "<dt>Address</dt>" + blank("please complete") +
-      "<dt>Phone</dt>" + blank("please complete") +
-    "</dl></div>" +
+      "<dt>Email</dt><dd>" + esc(s.email || "") + "</dd>" +
+      '<dt>Firm</dt><dd><input id="f-firm" type="text" value="' + esc(s.firm || "") +
+        '" placeholder="Firm or organisation"></dd>' +
+      '<dt>Address</dt><dd><textarea id="f-address" placeholder="Street, City, State ZIP">' +
+        esc(s.address || "") + "</textarea></dd>" +
+      '<dt>Phone</dt><dd><input id="f-phone" type="text" value="' + esc(s.phone || "") +
+        '" placeholder="Direct line or mobile"></dd>' +
+      '<dt>Say my name</dt><dd><input id="f-say" type="text" value="' +
+        esc(s.pronunciation || "") + '" placeholder="e.g. MAG-duh-leen RAY-ess"></dd>' +
+    "</dl>" +
+    '<p class="fill-note">These go on your record at NACBA, so they carry across to your ' +
+    "biography and your introduction. Save before you print.</p>" +
+    '<div class="fill-actions"><button class="btn" id="save-details">Save my details</button>' +
+    '<p class="save-msg" id="save-msg"></p></div></div>' +
 
     '<div class="party"><dl class="kv">' +
       "<dt>Event</dt><dd>" + esc(p.title || "") + "</dd>" +
@@ -316,10 +338,32 @@ function render(d) {
     '<a href="mailto:admin@nacba.com">admin@nacba.com</a> · (800) 499-9040</footer>';
 
   document.getElementById("print")?.addEventListener("click", () => window.print());
+
+  const saveBtn = document.getElementById("save-details");
+  saveBtn?.addEventListener("click", async () => {
+    const msg = document.getElementById("save-msg");
+    const say = (t, cls) => { msg.textContent = t; msg.className = "save-msg " + (cls || ""); };
+    saveBtn.disabled = true; say("Saving…");
+    try {
+      const { data: r, error } = await sb.rpc("speaker_update_details", {
+        tok,
+        p_firm:          document.getElementById("f-firm").value.trim(),
+        p_address:       document.getElementById("f-address").value.trim(),
+        p_phone:         document.getElementById("f-phone").value.trim(),
+        p_pronunciation: document.getElementById("f-say").value.trim()
+      });
+      if (error || !r?.ok) say(r?.error || "That didn't save. Please try again.", "err");
+      else say("Saved — thank you.", "ok");
+    } catch (e) {
+      say("That didn't save. Please try again.", "err");
+    } finally { saveBtn.disabled = false; }
+  });
 }
 
+let tok = "";
+
 (async function () {
-  const tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");
+  tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");
   if (!tok) { notFound("This page needs the full link from your packet."); return; }
   try {
     const { data, error } = await sb.rpc("speaker_packet", { tok });

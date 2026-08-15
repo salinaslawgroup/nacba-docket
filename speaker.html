@@ -468,6 +468,8 @@ function render(d) {
     "<dt>Name</dt><dd>" + esc(d.speaker.full_name) + "</dd>" +
     (d.speaker.preferred_title ? "<dt>Title</dt><dd>" + esc(d.speaker.preferred_title) + "</dd>" : "") +
     (d.speaker.firm ? "<dt>Firm</dt><dd>" + esc(d.speaker.firm) + "</dd>" : "") +
+    (d.speaker.address ? "<dt>Address</dt><dd>" + esc(d.speaker.address) + "</dd>" : "") +
+    (d.speaker.phone ? "<dt>Phone</dt><dd>" + esc(d.speaker.phone) + "</dd>" : "") +
     (d.speaker.email ? "<dt>Email</dt><dd>" + esc(d.speaker.email) + "</dd>" : "") +
     (d.speaker.pronunciation ? "<dt>Say</dt><dd>" + esc(d.speaker.pronunciation) + "</dd>" : "") +
     "</dl></div>" +

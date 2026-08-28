@@ -87,6 +87,7 @@
     padding:.42rem .8rem;font-size:.86rem;font-weight:600;color:var(--muted)}
   .btn:hover{border-color:var(--accent);color:var(--accent)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--ground)}
+  .btn.is-here{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
   .btn.danger{color:var(--critical)}
   .btn.danger:hover{border-color:var(--critical);color:var(--critical)}
   .mini{font-size:.82rem;background:none;border:none;padding:.15rem .3rem;color:var(--faint)}
@@ -730,7 +731,13 @@ function alertsFor(p){
 /* ================= render ================= */
 function render(){ app.innerHTML = view.name==="detail" ? renderDetail() : renderSeason(); wire(); }
 
+const nav = (id,label,active) =>
+  '<button class="btn' + (active ? " is-here" : "") + '" id="' + id + '"' +
+  (active ? ' aria-current="page"' : "") + ">" + label + "</button>";
+
 function chrome(inner){
+  const live  = programs.filter(p => !p.archived).length;
+  const shelf = programs.length - live;
   return '<header class="masthead"><div><span class="logo-plate">' +
     '<img src="assets/nacba-logo.png" alt="National Association of Consumer ' +
     'Bankruptcy Attorneys" width="200" height="35"></span>' +
@@ -738,12 +745,14 @@ function chrome(inner){
     "<h1>Webinar Docket</h1></div><div class=\"masthead-right\">" +
     '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
     esc(session?.user?.email||"") + '</span><div class="btn-row">' +
-    '<button class="btn" id="roster-btn">Speakers</button>' +
-    '<button class="btn" id="team-btn">Team</button>' +
-    '<button class="btn" id="hist-all">History</button>' +
+    nav("programs-btn","Programs", view.name==="detail" ||
+        (view.name==="season" && !["roster","team","history"].includes(view.tab))) +
+    nav("roster-btn","Speakers", view.tab==="roster") +
+    nav("team-btn","Team",       view.tab==="team") +
     '<button class="btn" id="signout">Sign out</button></div></div></header>' + inner +
-    '<footer><span>2026 season · '+programs.length+" programs</span>" +
-    "<span>Shared · saves for everyone</span></footer>";
+    '<footer><span>' + live + " live · " + shelf + " in the catalogue · " +
+      roster.length + " speakers</span>" +
+    '<span><button class="btn" id="hist-all">Change history</button></span></footer>';
 }
 
 /* Everything a speaker has done, newest first, from the programs already
@@ -1362,6 +1371,11 @@ function wire(){
 
   document.getElementById("signout")?.addEventListener("click", async ()=>{
     await sb.auth.signOut(); session=null; renderGate();
+  });
+  document.getElementById("programs-btn")?.addEventListener("click", ()=>{
+    view={ name:"season", tab:"upcoming", id:null, speakerId:null, q:"", cat:null, stype:null,
+           edit:false, editSpeaker:null, editRoster:false, creating:false };
+    render(); window.scrollTo(0,0);
   });
   document.getElementById("roster-btn")?.addEventListener("click", ()=>{
     view={ name:"season", tab:"roster", id:null, speakerId:null, q:"", cat:null, stype:null,

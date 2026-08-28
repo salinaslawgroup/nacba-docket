@@ -143,4 +143,26 @@ check('speaker with no recording:',[
  ['no hear button', ()=>!h.includes('data-hear=')],
 ]);
 
+
+// ---- navigation ----
+view={...base,tab:'upcoming'}; render(); h=global.__a.innerHTML;
+check('navigation, on Programs:',[
+ ['Programs button present', ()=>h.includes('id="programs-btn"')],
+ ['marked as current', ()=>/id="programs-btn" aria-current="page"|class="btn is-here" id="programs-btn"/.test(h)],
+ ['Speakers and Team present', ()=>h.includes('id="roster-btn"')&&h.includes('id="team-btn"')],
+ ['History out of the header', ()=>h.indexOf('id="hist-all"')>h.indexOf('<footer')],
+ ['History in the footer', ()=>h.includes('Change history')],
+ ['footer counts programs', ()=>/\d+ live · \d+ in the catalogue/.test(h)],
+]);
+view={...base,tab:'roster'}; render(); h=global.__a.innerHTML;
+check('on Speakers:',[
+ ['Speakers marked current', ()=>/is-here" id="roster-btn"|id="roster-btn" aria-current/.test(h)],
+ ['Programs not current', ()=>!/is-here" id="programs-btn"/.test(h)],
+ ['Programs still reachable', ()=>h.includes('id="programs-btn"')],
+]);
+view={...base,tab:'roster',speakerId:'s1'}; render(); h=global.__a.innerHTML;
+check('deep in a speaker page:',[
+ ['Programs button still there', ()=>h.includes('id="programs-btn"')],
+]);
+
 process.exit(fails?1:0);

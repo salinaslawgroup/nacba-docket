@@ -94,4 +94,37 @@ check('new program form:',[
  ['venue + location', ()=>h.includes('id="np-venue"')&&h.includes('id="np-loc"')],
  ['conference in kinds', ()=>h.includes('Conference session')],
 ]);
+
+// ---- editing a speaker from their own page ----
+view={...base,tab:'roster',speakerId:'s1'}; render(); h=global.__a.innerHTML;
+check('speaker page, read mode:',[
+ ['Edit details button', ()=>h.includes('id="rs-edit"')],
+ ['no form fields yet', ()=>!h.includes('id="rs-name"')],
+ ['contact shown', ()=>h.includes('JDL Law')],
+]);
+
+view={...base,tab:'roster',speakerId:'s1',editRoster:true}; render(); h=global.__a.innerHTML;
+check('speaker page, edit mode:',[
+ ['name prefilled', ()=>/id="rs-name" value="Jenny L. Doling, Esq."/.test(h)],
+ ['type preselected', ()=>/value="debtor_attorney" selected/.test(h)],
+ ['firm, email, phone', ()=>['rs-firm','rs-email','rs-phone'].every(i=>h.includes('id="'+i+'"'))],
+ ['address + pronunciation', ()=>h.includes('id="rs-addr"')&&h.includes('id="rs-say"')],
+ ['headshot + bio location', ()=>h.includes('id="rs-head"')&&h.includes('id="rs-bio"')],
+ ['notes textarea', ()=>h.includes('id="rs-notes"')],
+ ['save and cancel', ()=>h.includes('id="rs-save"')&&h.includes('id="rs-cancel"')],
+ ['delete blocked — has programs', ()=>!h.includes('id="rs-del"')&&h.includes('remove them first')],
+]);
+
+// a speaker with no programs may be deleted
+view={...base,tab:'roster',speakerId:'s2',editRoster:true}; render(); h=global.__a.innerHTML;
+check('speaker with no programs:',[
+ ['delete offered', ()=>h.includes('id="rs-del"')],
+ ['judge type preselected', ()=>/value="judge" selected/.test(h)],
+]);
+
+view={...base,tab:'roster'}; render(); h=global.__a.innerHTML;
+check('roster:',[
+ ['add-a-speaker box', ()=>h.includes('id="rs-new"')&&h.includes('id="rs-add"')],
+]);
+
 process.exit(fails?1:0);

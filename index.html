@@ -87,6 +87,7 @@
     padding:.42rem .8rem;font-size:.86rem;font-weight:600;color:var(--muted)}
   .btn:hover{border-color:var(--accent);color:var(--accent)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--ground)}
+  .btn.danger{color:var(--critical)}
   .btn.danger:hover{border-color:var(--critical);color:var(--critical)}
   .mini{font-size:.82rem;background:none;border:none;padding:.15rem .3rem;color:var(--faint)}
   .mini:hover{color:var(--accent);text-decoration:underline}
@@ -334,7 +335,7 @@ const val = id => (document.getElementById(id)?.value ?? "").trim();
 let session=null, programs=[], roster=[], history=[], links={}, uploads={},
     categories=[], progCats={}, spkCats={}, team=[], myRole="staff", busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null,
-  creating:false, cat:null, speakerId:null, q:"", stype:null };
+  creating:false, cat:null, speakerId:null, q:"", stype:null, editRoster:false };
 const app = document.getElementById("app");
 
 /* ================= sign in ================= */
@@ -420,6 +421,34 @@ async function loadHistory(programId) {
     history = [];
   }
 }
+
+async function saveRosterSpeaker(id){
+  const name = val("rs-name");
+  if (!name) { toast("A name is required", true); return; }
+  view.editRoster = false;
+  await mutate(() => sb.from("speakers").update({
+    full_name: name, preferred_title: val("rs-title"), firm: val("rs-firm"),
+    email: val("rs-email"), phone: val("rs-phone"), address: val("rs-addr"),
+    pronunciation: val("rs-say"), headshot_location: val("rs-head"),
+    bio_location: val("rs-bio"), notes: val("rs-notes"),
+    speaker_type: val("rs-type") || null
+  }).eq("id", id));
+}
+
+async function addRosterSpeaker(){
+  const name = val("rs-new");
+  if (!name) { toast("Type a name first", true); return; }
+  const hit = roster.find(r => r.full_name.toLowerCase() === name.toLowerCase());
+  if (hit) {
+    view = { ...view, speakerId: hit.id, q: "" };
+    toast(name + " is already on the roster"); render(); return;
+  }
+  await mutate(() => sb.from("speakers").insert({ full_name: name }), name + " added");
+}
+
+const removeRosterSpeaker = id =>
+  mutate(() => sb.from("speakers").delete().eq("id", id), "Removed from the roster")
+    .then(() => { view = { ...view, speakerId: null, editRoster: false }; render(); });
 
 async function addUser() {
   const email = val("nu-email").toLowerCase();
@@ -758,6 +787,12 @@ function renderRoster(){
       'border-radius:3px;background:var(--surface-2);color:var(--ink);max-width:26rem"></div>' +
     '<div class="cat-filter">'+catFilter+"</div>" +
     '<div class="cat-filter">'+typeFilter+clear+"</div>" +
+    '<div class="form" style="margin:0 0 1.25rem;flex-direction:row;gap:.5rem;align-items:flex-end;flex-wrap:wrap">' +
+    '<div class="field" style="min-width:16rem"><label class="field-label" for="rs-new">Add a speaker</label>' +
+    '<input type="text" id="rs-new" placeholder="Full name, as it should be printed" ' +
+    'style="font:inherit;font-size:.95rem;padding:.5rem .65rem;border:1px solid var(--rule-strong);' +
+    'border-radius:3px;background:var(--surface-2);color:var(--ink);width:100%"></div>' +
+    '<button class="btn" id="rs-add">Add</button></div>' +
     '<div class="grid">'+rows+"</div>");
 }
 
@@ -781,9 +816,18 @@ function renderSpeaker(){
   const contact = [
     ["Type", typeLabel(s.speaker_type)], ["Title", s.preferred_title],
     ["Firm", s.firm], ["Email", s.email], ["Phone", s.phone],
-    ["Say", s.pronunciation]
+    ["Address", s.address], ["Say", s.pronunciation],
+    ["Headshot", s.headshot_location], ["Bio", s.bio_location],
+    ["Notes", s.notes]
   ].filter(([,v]) => v).map(([k,v]) =>
     "<dt>"+esc(k)+"</dt><dd>"+esc(v)+"</dd>").join("");
+
+  const detailsPanel = view.editRoster
+    ? rosterSpeakerForm(s)
+    : '<section class="panel"><p class="panel-head"><span>Details</span>' +
+      '<button class="mini" id="rs-edit">Edit details</button></p>' +
+      (contact ? '<dl class="kv">'+contact+"</dl>"
+        : '<p class="empty-note">Nothing recorded beyond the name yet.</p>') + "</section>";
 
   return chrome(
     '<button class="back" data-roster>← All speakers</button>' +
@@ -791,12 +835,45 @@ function renderSpeaker(){
       '<p class="desc">'+ hist.length + (hist.length===1?" program":" programs") +
       (hist.length ? " · first " + esc(FMT_CARD.format(parseISO(hist[hist.length-1].p.event_date))) +
         ", most recent " + esc(FMT_CARD.format(parseISO(hist[0].p.event_date))) : "") + "</p></div>" +
-    (contact ? '<section class="panel"><p class="panel-head"><span>Contact</span></p>' +
-      '<dl class="kv">'+contact+"</dl></section>" : "") +
+    detailsPanel +
     '<section class="panel"><p class="panel-head"><span>Topics they cover</span>' +
       "<span>click to tag</span></p>" + catChips("speaker", s.id, spkCats[s.id]||[]) + "</section>" +
     '<section class="panel"><p class="panel-head"><span>Programs</span><span>' +
       hist.length + "</span></p>" + progRows + "</section>");
+}
+
+function rosterSpeakerForm(s){
+  const f = (id,label,val,ph) =>
+    '<div class="field"><label class="field-label" for="'+id+'">'+esc(label)+"</label>" +
+    '<input type="text" id="'+id+'" value="'+esc(val||"")+'"' +
+    (ph?' placeholder="'+esc(ph)+'"':"") + "></div>";
+
+  return '<section class="panel"><p class="panel-head"><span>Edit details</span>' +
+    "<span>saved to the roster, used everywhere</span></p><div class=\"form\">" +
+    '<div class="form-row">' + f("rs-name","Full name",s.full_name) +
+      '<div class="field"><label class="field-label" for="rs-type">Speaker type</label>' +
+      '<select id="rs-type">' + SPEAKER_TYPES.map(t =>
+        '<option value="'+t.id+'"'+((s.speaker_type||"")===t.id?" selected":"")+">"+
+        esc(t.label)+"</option>").join("") + "</select></div></div>" +
+    '<div class="form-row">' + f("rs-title","Preferred title",s.preferred_title,"Judge, Professor…") +
+      f("rs-firm","Firm",s.firm) + "</div>" +
+    '<div class="form-row">' + f("rs-email","Email",s.email) +
+      f("rs-phone","Phone",s.phone) + "</div>" +
+    '<div class="form-row">' + f("rs-addr","Address",s.address) +
+      f("rs-say","Name pronunciation",s.pronunciation,"e.g. KAT-rin duh-LUCA") + "</div>" +
+    '<div class="form-row">' +
+      f("rs-head","Headshot location",s.headshot_location,"Internal marketing files — never the attendee ZIP") +
+      f("rs-bio","Bio location",s.bio_location) + "</div>" +
+    '<div class="field"><label class="field-label" for="rs-notes">Notes</label>' +
+    '<textarea id="rs-notes" placeholder="Anything staff should know">'+esc(s.notes||"")+"</textarea></div>" +
+    '<div class="form-actions"><button class="btn primary" id="rs-save" data-sp="'+s.id+
+      '">Save</button><button class="btn" id="rs-cancel">Cancel</button>' +
+      (historyFor(s.id).length === 0
+        ? '<button class="btn danger" id="rs-del" data-sp="'+s.id+'" data-name="'+
+          esc(s.full_name)+'">Remove from roster</button>'
+        : '<span class="hint" style="font-size:.85rem;color:var(--faint)">' +
+          "Has programs — remove them first to delete</span>") +
+    "</div></div></section>";
 }
 
 function renderTeam(){
@@ -1281,6 +1358,20 @@ function wire(){
     render(); window.scrollTo(0,0);
   });
   document.getElementById("nu-add")?.addEventListener("click", addUser);
+  document.getElementById("rs-edit")?.addEventListener("click", ()=>{
+    view={ ...view, editRoster:true }; render(); });
+  document.getElementById("rs-cancel")?.addEventListener("click", ()=>{
+    view={ ...view, editRoster:false }; render(); });
+  document.getElementById("rs-save")?.addEventListener("click", ()=>
+    saveRosterSpeaker(document.getElementById("rs-save").getAttribute("data-sp")));
+  document.getElementById("rs-add")?.addEventListener("click", addRosterSpeaker);
+  document.getElementById("rs-new")?.addEventListener("keydown", e=>{
+    if (e.key === "Enter") { e.preventDefault(); addRosterSpeaker(); } });
+  document.getElementById("rs-del")?.addEventListener("click", ()=>{
+    const b=document.getElementById("rs-del");
+    if (confirm("Remove " + b.getAttribute("data-name") + " from the roster?\n\nThey have no programs, so nothing else is affected."))
+      removeRosterSpeaker(b.getAttribute("data-sp"));
+  });
   document.getElementById("hist-all")?.addEventListener("click", ()=>{
     history = [];
     view={ name:"season", tab:"history", id:null, edit:false, editSpeaker:null, creating:false, cat:view.cat };
@@ -1344,10 +1435,11 @@ function wire(){
   });
 
   on("[data-speaker]","click",el=>{
-    view={ ...view, tab:"roster", speakerId: el.getAttribute("data-speaker") };
+    view={ ...view, tab:"roster", speakerId: el.getAttribute("data-speaker"), editRoster:false };
     render(); window.scrollTo(0,0); });
   on("[data-roster]","click",()=>{
-    view={ ...view, tab:"roster", speakerId:null }; render(); window.scrollTo(0,0); });
+    view={ ...view, tab:"roster", speakerId:null, editRoster:false };
+    render(); window.scrollTo(0,0); });
   on("[data-rcat]","click",el=>{
     const v=el.getAttribute("data-rcat");
     view={ ...view, cat: view.cat===v ? null : v }; render(); });

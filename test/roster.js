@@ -1,0 +1,97 @@
+const fs=require('fs'),vm=require('vm'),path=require('path');
+let s=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8')
+ .split('<script type="module">')[1].split('</script>')[0];
+s=s.replace(/^import .*$/m,'')
+   .replace(/^const sb =.*$/m,'var sb={auth:{onAuthStateChange(){},getSession:async()=>({data:{}})}};')
+   .replace(/^const app = .*$/m,'var app=global.__a;')
+   .replace(/^const /gm,'var ').replace(/^let /gm,'var ');
+const handlers=[];
+const mkEl=(a={})=>({innerHTML:'',textContent:'',className:'',value:'',hidden:true,checked:false,
+  classList:{contains:()=>false},getAttribute:k=>a[k]??null,
+  addEventListener:(ev,fn)=>handlers.push({ev,fn,attrs:a}),
+  querySelectorAll:()=>[],scrollIntoView(){},focus(){},remove(){}});
+global.__a=mkEl(); const st={};
+global.__a.querySelectorAll=sel=>{const m=/\[data-([a-z]+)\]/.exec(sel);if(!m)return[];
+  const k='data-'+m[1];const a={};a[k]=k==='data-speaker'?'s1':'x';return[mkEl(a)];};
+global.document={getElementById:i=>(st[i]=st[i]||mkEl()),querySelectorAll:()=>[],
+  querySelector:()=>null,createElement:mkEl,body:{appendChild(){}}};
+global.window={scrollTo(){},addEventListener(){},open:()=>null};
+global.location={href:'https://x/'}; global.localStorage={getItem:()=>null,setItem(){}};
+global.setTimeout=(f)=>{}; global.clearTimeout=()=>{}; global.navigator={clipboard:{}};
+vm.runInThisContext(s);
+
+session={user:{email:'t@x.com'}}; myRole='admin'; team=[]; links={}; uploads={}; history=[];
+categories=[{id:'c1',name:'Student Loans'},{id:'c2',name:'Chapter 13'}];
+spkCats={s1:['c1']}; progCats={};
+roster=[
+ {id:'s1',full_name:'Jenny L. Doling, Esq.',preferred_title:'',firm:'JDL Law',
+  email:'jd@jdl.law',phone:'',pronunciation:'',speaker_type:'debtor_attorney'},
+ {id:'s2',full_name:'Hon. Pat Ellery',preferred_title:'Judge',firm:'Court',
+  email:'p@court.gov',phone:'',pronunciation:'',speaker_type:'judge'}];
+const spk=id=>({id,full_name:roster.find(r=>r.id===id).full_name});
+programs=[
+ {id:'p1',event_date:'2026-10-22',kind:'paid',archived:false,title:'SLAP in a Nutshell',
+  description:'d',note:'',venue:'',location:'',store_url:'',recording_url:'',
+  program_speakers:[{id:'ps1',topic:'Workflows',confirmation:'confirmed',sort_order:0,
+    speakers:{...spk('s1'),preferred_title:'',firm:'JDL',address:'',email:'jd@jdl.law',phone:'',
+      pronunciation:'',headshot_location:'',bio_location:'',speaker_type:'debtor_attorney'},
+    deliverables:[]}],tasks:[]},
+ {id:'p2',event_date:'2023-05-11',kind:'conference',archived:true,title:'Cramdowns Live',
+  description:'',note:'',venue:'JW Marriott',location:'Palm Desert, CA',
+  store_url:'https://nacba.com/store/cramdowns',recording_url:'',
+  program_speakers:[{id:'ps2',topic:'',confirmation:'confirmed',sort_order:0,
+    speakers:{...spk('s1'),preferred_title:'',firm:'JDL',address:'',email:'jd@jdl.law',phone:'',
+      pronunciation:'',headshot_location:'',bio_location:'',speaker_type:'debtor_attorney'},
+    deliverables:[]}],tasks:[]}];
+
+let fails=0;
+function check(label, tests){
+  console.log(label);
+  tests.forEach(([n,fn])=>{ let ok=false; try{ ok=fn(); }catch(e){}
+    if(!ok) fails++; console.log((ok?'    ok   ':'    FAIL ')+n); });
+}
+const base={name:'season',id:null,edit:false,editSpeaker:null,creating:false,
+            cat:null,stype:null,q:'',speakerId:null};
+
+view={...base,tab:'roster'}; render(); let h=global.__a.innerHTML;
+check('roster:',[
+ ['Speakers button in header', ()=>h.includes('id="roster-btn"')],
+ ['both speakers listed', ()=>h.includes('Jenny L. Doling')&&h.includes('Hon. Pat Ellery')],
+ ['program counts shown', ()=>h.includes('2 programs')&&h.includes('0 programs')],
+ ['topic tags render', ()=>h.includes('Student Loans')],
+ ['category + type filters', ()=>h.includes('data-rcat=')&&h.includes('data-rtype=')],
+]);
+
+view={...base,tab:'roster',stype:'judge'}; render(); h=global.__a.innerHTML;
+check('filtered to judges:',[
+ ['judge kept', ()=>h.includes('Hon. Pat Ellery')],
+ ['others excluded', ()=>!h.includes('Jenny L. Doling')],
+]);
+
+view={...base,tab:'roster',speakerId:'s1'}; render(); h=global.__a.innerHTML;
+check('speaker detail:',[
+ ['both programs listed', ()=>h.includes('SLAP in a Nutshell')&&h.includes('Cramdowns Live')],
+ ['newest first', ()=>h.indexOf('SLAP in a Nutshell')<h.indexOf('Cramdowns Live')],
+ ['in-person location shown', ()=>h.includes('Palm Desert, CA')],
+ ['store link present', ()=>h.includes('nacba.com/store/cramdowns')],
+ ['topic chips editable', ()=>h.includes('data-cat="speaker"')],
+]);
+
+view={...base,tab:'catalog'}; render(); h=global.__a.innerHTML;
+check('catalogue tab:',[
+ ['archived program shown', ()=>h.includes('Cramdowns Live')],
+ ['live program excluded', ()=>!h.includes('SLAP in a Nutshell')],
+]);
+view={...base,tab:'all'}; render(); h=global.__a.innerHTML;
+check('season view:',[
+ ['live program shown', ()=>h.includes('SLAP in a Nutshell')],
+ ['archived kept out', ()=>!h.includes('Cramdowns Live')],
+]);
+view={...base,tab:'upcoming',creating:true}; render(); h=global.__a.innerHTML;
+check('new program form:',[
+ ['catalogue checkbox', ()=>h.includes('id="np-archived"')],
+ ['store link field', ()=>h.includes('id="np-store"')],
+ ['venue + location', ()=>h.includes('id="np-venue"')&&h.includes('id="np-loc"')],
+ ['conference in kinds', ()=>h.includes('Conference session')],
+]);
+process.exit(fails?1:0);

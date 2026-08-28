@@ -293,8 +293,11 @@ const PROGRAM_KINDS = [
   { id:"paid",              label:"Paid webinar (CLE)" },
   { id:"vendor",            label:"Vendor program (sponsored, free, no CLE)" },
   { id:"marketing_minute",  label:"BK Marketing Minute" },
-  { id:"bk_talk",           label:"BK Talk" }
+  { id:"bk_talk",           label:"BK Talk" },
+  { id:"conference",        label:"Conference session (in person)" },
+  { id:"workshop",          label:"Workshop (in person)" }
 ];
+const IN_PERSON = k => k === "conference" || k === "workshop";
 const kindLabel = k => (PROGRAM_KINDS.find(x => x.id === (k||"paid")) || {}).label || "";
 const SPEAKER_TYPES = [
   { id:"",                    label:"— not recorded —" },
@@ -330,7 +333,8 @@ const val = id => (document.getElementById(id)?.value ?? "").trim();
 
 let session=null, programs=[], roster=[], history=[], links={}, uploads={},
     categories=[], progCats={}, spkCats={}, team=[], myRole="staff", busy=false;
-let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false, cat:null };
+let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null,
+  creating:false, cat:null, speakerId:null, q:"", stype:null };
 const app = document.getElementById("app");
 
 /* ================= sign in ================= */
@@ -359,13 +363,14 @@ function renderGate(msg, kind) {
 async function loadData() {
   const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes, tRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note, kind,
+      archived, venue, location, store_url, recording_url,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, address, email, phone, pronunciation,
                    headshot_location, bio_location, speaker_type ),
         deliverables ( id, item, received ) ),
       tasks ( id, offset_days, seq, task, owner_role, source_ref, is_gate, gate_key, done, done_by )`)
       .order("event_date"),
-    sb.from("speakers").select("id, full_name").order("full_name"),
+    sb.from("speakers").select("id, full_name, preferred_title, firm, email, phone, pronunciation, speaker_type, notes").order("full_name"),
     sb.from("speaker_links")
       .select("program_speaker_id, token, open_count, last_opened_at, revoked"),
     sb.from("speaker_uploads")
@@ -689,11 +694,109 @@ function chrome(inner){
     "<h1>Webinar Docket</h1></div><div class=\"masthead-right\">" +
     '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
     esc(session?.user?.email||"") + '</span><div class="btn-row">' +
+    '<button class="btn" id="roster-btn">Speakers</button>' +
     '<button class="btn" id="team-btn">Team</button>' +
     '<button class="btn" id="hist-all">History</button>' +
     '<button class="btn" id="signout">Sign out</button></div></div></header>' + inner +
     '<footer><span>2026 season · '+programs.length+" programs</span>" +
     "<span>Shared · saves for everyone</span></footer>";
+}
+
+/* Everything a speaker has done, newest first, from the programs already
+   in memory — no extra query. */
+function historyFor(speakerId){
+  return programs
+    .filter(p => p.program_speakers.some(ps => ps.speakers?.id === speakerId))
+    .map(p => ({ p, ps: p.program_speakers.find(x => x.speakers?.id === speakerId) }))
+    .sort((a,b) => (a.p.event_date < b.p.event_date ? 1 : -1));
+}
+
+function renderRoster(){
+  const q = (view.q || "").toLowerCase();
+  const list = roster.filter(s => {
+    if (view.cat && !(spkCats[s.id]||[]).includes(view.cat)) return false;
+    if (view.stype && s.speaker_type !== view.stype) return false;
+    if (!q) return true;
+    return [s.full_name, s.firm, s.email].filter(Boolean)
+      .some(v => v.toLowerCase().includes(q));
+  });
+
+  const catFilter = categories.map(c =>
+    '<button class="chip-t'+(view.cat===c.id?" is-on":"")+'" data-rcat="'+c.id+'">'+
+    esc(c.name)+"</button>").join("");
+  const typeFilter = SPEAKER_TYPES.filter(t=>t.id).map(t =>
+    '<button class="chip-t'+(view.stype===t.id?" is-on":"")+'" data-rtype="'+t.id+'">'+
+    esc(t.label)+"</button>").join("");
+  const clear = (view.cat||view.stype||view.q)
+    ? '<button class="chip-t" data-rclear="1">Clear filters</button>' : "";
+
+  const rows = list.length ? list.map(s => {
+    const hist = historyFor(s.id);
+    const last = hist[0];
+    const tags = (spkCats[s.id]||[]).map(id =>
+      '<span class="cat-tag">'+esc(catName(id))+"</span>").join("");
+    const meta = [typeLabel(s.speaker_type), s.firm, s.email].filter(Boolean).join(" · ");
+    return '<button class="card" data-speaker="'+s.id+'" style="gap:.5rem">' +
+      '<div class="card-top"><span class="sp-name">'+esc(s.full_name)+"</span>" +
+      '<span class="card-days">'+hist.length+(hist.length===1?" program":" programs")+"</span></div>" +
+      (meta ? '<div class="sp-meta">'+esc(meta)+"</div>" : "") +
+      (tags ? '<div class="cat-tags">'+tags+"</div>" : "") +
+      (last ? '<div class="card-foot"><span>Last: '+esc(FMT_CARD.format(parseISO(last.p.event_date)))+
+        " · "+esc(last.p.title.slice(0,44))+(last.p.title.length>44?"…":"")+"</span></div>"
+        : '<div class="card-foot"><span>No programs yet</span></div>') +
+      "</button>";
+  }).join("") : '<p class="empty-note">Nobody matches those filters.</p>';
+
+  return chrome(
+    '<button class="back" data-back>← All programs</button>' +
+    '<h2 style="font-size:1.4rem;margin:0 0 .3rem">Speakers</h2>' +
+    '<p class="sub" style="color:var(--muted);margin:0 0 1.1rem">' + roster.length +
+      " on the roster. Filter by what they cover or what they are.</p>" +
+    '<div class="form" style="margin-bottom:1rem"><input type="text" id="r-q" ' +
+      'placeholder="Search name, firm, or email" value="'+esc(view.q||"")+'" ' +
+      'style="font:inherit;font-size:.95rem;padding:.5rem .65rem;border:1px solid var(--rule-strong);' +
+      'border-radius:3px;background:var(--surface-2);color:var(--ink);max-width:26rem"></div>' +
+    '<div class="cat-filter">'+catFilter+"</div>" +
+    '<div class="cat-filter">'+typeFilter+clear+"</div>" +
+    '<div class="grid">'+rows+"</div>");
+}
+
+function renderSpeaker(){
+  const s = roster.find(x => x.id === view.speakerId);
+  if (!s) return chrome("");
+  const hist = historyFor(s.id);
+
+  const progRows = hist.length ? hist.map(({p, ps}) =>
+    '<div class="sp-row"><div>' +
+      '<div class="sp-name">'+esc(p.title)+"</div>" +
+      '<div class="sp-meta">'+esc(FMT_FULL.format(parseISO(p.event_date))) +
+        (p.kind && p.kind!=="paid" ? " · "+esc(kindLabel(p.kind).split(" (")[0]) : "") +
+        (p.location ? " · "+esc(p.location) : "") +
+        (ps.topic ? " · "+esc(ps.topic) : "") + "</div></div>" +
+      '<div class="sp-actions">' +
+      (p.store_url ? '<a class="mini" href="'+esc(p.store_url)+'" target="_blank" rel="noopener">In the store</a>' : "") +
+      '<button class="mini" data-open="'+p.id+'">Open</button></div></div>'
+  ).join("") : '<p class="empty-note">No programs recorded yet.</p>';
+
+  const contact = [
+    ["Type", typeLabel(s.speaker_type)], ["Title", s.preferred_title],
+    ["Firm", s.firm], ["Email", s.email], ["Phone", s.phone],
+    ["Say", s.pronunciation]
+  ].filter(([,v]) => v).map(([k,v]) =>
+    "<dt>"+esc(k)+"</dt><dd>"+esc(v)+"</dd>").join("");
+
+  return chrome(
+    '<button class="back" data-roster>← All speakers</button>' +
+    '<div class="detail-head"><h2>'+esc(s.full_name)+"</h2>" +
+      '<p class="desc">'+ hist.length + (hist.length===1?" program":" programs") +
+      (hist.length ? " · first " + esc(FMT_CARD.format(parseISO(hist[hist.length-1].p.event_date))) +
+        ", most recent " + esc(FMT_CARD.format(parseISO(hist[0].p.event_date))) : "") + "</p></div>" +
+    (contact ? '<section class="panel"><p class="panel-head"><span>Contact</span></p>' +
+      '<dl class="kv">'+contact+"</dl></section>" : "") +
+    '<section class="panel"><p class="panel-head"><span>Topics they cover</span>' +
+      "<span>click to tag</span></p>" + catChips("speaker", s.id, spkCats[s.id]||[]) + "</section>" +
+    '<section class="panel"><p class="panel-head"><span>Programs</span><span>' +
+      hist.length + "</span></p>" + progRows + "</section>");
 }
 
 function renderTeam(){
@@ -751,10 +854,16 @@ function renderTeam(){
 function renderSeason(){
   if (view.creating) return chrome(newProgramForm());
   if (view.tab==="team") return renderTeam();
+  if (view.tab==="roster") return view.speakerId ? renderSpeaker() : renderRoster();
   if (view.tab==="history") return chrome(historyPanel(null));
 
-  const upcoming=programs.filter(p=>!isPast(p)), past=programs.filter(isPast);
-  const list = view.tab==="upcoming" ? upcoming : (view.tab==="past" ? past : programs);
+  const live = programs.filter(p => !p.archived);
+  const shelf = programs.filter(p => p.archived);
+  const upcoming = live.filter(p => !isPast(p)), past = live.filter(isPast);
+  const list = view.tab==="upcoming" ? upcoming
+             : view.tab==="past" ? past
+             : view.tab==="catalog" ? shelf
+             : live;
   const shown = view.cat ? list.filter(p => (progCats[p.id]||[]).includes(view.cat)) : list;
 
   const rows = upcoming.map(p=>{
@@ -779,7 +888,8 @@ function renderSeason(){
 
   return chrome(alerts + '<div class="tabs" role="tablist">' +
     tab("upcoming","Upcoming",upcoming.length)+tab("past","Completed",past.length)+
-    tab("all","All",programs.length)+'<span class="spacer"></span>'+
+    tab("all","All",live.length)+tab("catalog","Catalogue",shelf.length)+
+    '<span class="spacer"></span>'+
     '<button class="btn primary" id="new-program">+ New program</button></div>' + filter +
     '<div class="grid">'+shown.map(card).join("")+"</div>");
 }
@@ -821,6 +931,19 @@ function newProgramForm(){
     '<textarea id="np-desc" placeholder="Needed before registration can open."></textarea></div>' +
     '<div class="field"><label class="field-label" for="np-note">Internal note</label>' +
     '<input type="text" id="np-note" placeholder="Anything staff should know"></div>' +
+    '<div class="form-row">' +
+    '<div class="field"><label class="field-label" for="np-venue">Venue (in-person only)</label>' +
+    '<input type="text" id="np-venue" placeholder="Hotel or conference centre"></div>' +
+    '<div class="field"><label class="field-label" for="np-loc">Location (in-person only)</label>' +
+    '<input type="text" id="np-loc" placeholder="City, State"></div></div>' +
+    '<div class="field"><label class="field-label" for="np-store">Store link</label>' +
+    '<input type="text" id="np-store" placeholder="Where it is sold on nacba.com"></div>' +
+    '<label class="field-label" style="display:flex;align-items:center;gap:.5rem;' +
+      'text-transform:none;font-size:.92rem;color:var(--ink);cursor:pointer;margin-top:.4rem">' +
+    '<input type="checkbox" id="np-archived" style="width:15px;height:15px;accent-color:var(--accent)">' +
+    "Past program — record it for the catalogue, no docket</label>" +
+    '<p class="sub" style="margin:.2rem 0 0;font-size:.85rem;color:var(--faint)">' +
+    "Tick this for anything already delivered. It goes in the catalogue and generates no tasks.</p>" +
     '<div class="form-actions"><button class="btn primary" id="np-save">Create program</button>' +
     '<button class="btn" data-back>Cancel</button></div></div></section>';
 }
@@ -952,6 +1075,20 @@ function editProgramForm(p){
     "<textarea id=\"ep-desc\">"+esc(p.description)+"</textarea></div>"+
     '<div class="field"><label class="field-label" for="ep-note">Internal note</label>'+
     '<input type="text" id="ep-note" value="'+esc(p.note)+'"></div>'+
+    '<div class="form-row">'+
+    '<div class="field"><label class="field-label" for="ep-venue">Venue</label>'+
+    '<input type="text" id="ep-venue" value="'+esc(p.venue||"")+'"></div>'+
+    '<div class="field"><label class="field-label" for="ep-loc">Location</label>'+
+    '<input type="text" id="ep-loc" value="'+esc(p.location||"")+'"></div></div>'+
+    '<div class="form-row">'+
+    '<div class="field"><label class="field-label" for="ep-store">Store link</label>'+
+    '<input type="text" id="ep-store" value="'+esc(p.store_url||"")+'"></div>'+
+    '<div class="field"><label class="field-label" for="ep-rec">Recording link</label>'+
+    '<input type="text" id="ep-rec" value="'+esc(p.recording_url||"")+'"></div></div>'+
+    '<label class="field-label" style="display:flex;align-items:center;gap:.5rem;'+
+      'text-transform:none;font-size:.92rem;color:var(--ink);cursor:pointer">'+
+    '<input type="checkbox" id="ep-archived" style="width:15px;height:15px;accent-color:var(--accent)"'+
+      ((p.archived)?" checked":"")+">Catalogue entry — no docket</label>"+
     '<div class="form-actions"><button class="btn primary" id="ep-save" data-id="'+p.id+
     '">Save changes</button><button class="btn" id="ep-cancel">Cancel</button></div></div></section>';
 }
@@ -1061,8 +1198,11 @@ async function createProgram(){
   await mutate(()=>sb.from("programs").insert({
     slug: slugFor(date,title), event_date: date, title,
     kind: val("np-kind") || "paid",
-    description: val("np-desc"), note: val("np-note")
-  }), "Program created with its docket");
+    description: val("np-desc"), note: val("np-note"),
+    venue: val("np-venue"), location: val("np-loc"), store_url: val("np-store"),
+    archived: !!document.getElementById("np-archived")?.checked
+  }), document.getElementById("np-archived")?.checked
+       ? "Added to the catalogue" : "Program created with its docket");
   view = { ...view, creating:false, tab:"upcoming" };
   render();
 }
@@ -1073,7 +1213,10 @@ async function saveProgram(id){
   view.edit=false;
   await mutate(()=>sb.from("programs").update({
     event_date: date, title, kind: val("ep-kind") || "paid",
-    description: val("ep-desc"), note: val("ep-note")
+    description: val("ep-desc"), note: val("ep-note"),
+    venue: val("ep-venue"), location: val("ep-loc"),
+    store_url: val("ep-store"), recording_url: val("ep-rec"),
+    archived: !!document.getElementById("ep-archived")?.checked
   }).eq("id",id));
 }
 
@@ -1122,6 +1265,15 @@ function wire(){
 
   document.getElementById("signout")?.addEventListener("click", async ()=>{
     await sb.auth.signOut(); session=null; renderGate();
+  });
+  document.getElementById("roster-btn")?.addEventListener("click", ()=>{
+    view={ name:"season", tab:"roster", id:null, speakerId:null, q:"", cat:null, stype:null,
+           edit:false, editSpeaker:null, creating:false };
+    render(); window.scrollTo(0,0);
+  });
+  document.getElementById("r-q")?.addEventListener("input", e=>{
+    view.q = e.target.value;
+    clearTimeout(window.__q); window.__q = setTimeout(()=>render(), 200);
   });
   document.getElementById("team-btn")?.addEventListener("click", ()=>{
     view={ name:"season", tab:"team", id:null, edit:false, editSpeaker:null,
@@ -1190,6 +1342,20 @@ function wire(){
     const p = programs.find(x => x.id === view.id);
     previewInvitation(p, p.program_speakers.find(x => x.id === el.getAttribute("data-emailprev")));
   });
+
+  on("[data-speaker]","click",el=>{
+    view={ ...view, tab:"roster", speakerId: el.getAttribute("data-speaker") };
+    render(); window.scrollTo(0,0); });
+  on("[data-roster]","click",()=>{
+    view={ ...view, tab:"roster", speakerId:null }; render(); window.scrollTo(0,0); });
+  on("[data-rcat]","click",el=>{
+    const v=el.getAttribute("data-rcat");
+    view={ ...view, cat: view.cat===v ? null : v }; render(); });
+  on("[data-rtype]","click",el=>{
+    const v=el.getAttribute("data-rtype");
+    view={ ...view, stype: view.stype===v ? null : v }; render(); });
+  on("[data-rclear]","click",()=>{
+    view={ ...view, cat:null, stype:null, q:"" }; render(); });
 
   on("[data-role]","change",el=>setUserRole(el.getAttribute("data-role"), el.value));
   on("[data-rmuser]","click",el=>{

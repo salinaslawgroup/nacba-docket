@@ -18,3 +18,8 @@ output. Check the result, not the edit.
 
 Checks the Team screen renders the right controls for an administrator, hides
 them from everyone else, and protects the last remaining administrator.
+
+    node test/roster.js
+
+Covers the speaker roster, filtering, a speaker's program history, the
+catalogue tab, and the in-person and archive fields on the program form.

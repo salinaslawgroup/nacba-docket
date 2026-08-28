@@ -25,7 +25,7 @@ categories=[{id:'c1',name:'Student Loans'},{id:'c2',name:'Chapter 13'}];
 spkCats={s1:['c1']}; progCats={};
 roster=[
  {id:'s1',full_name:'Jenny L. Doling, Esq.',preferred_title:'',firm:'JDL Law',
-  email:'jd@jdl.law',phone:'',pronunciation:'',speaker_type:'debtor_attorney'},
+  email:'jd@jdl.law',phone:'',pronunciation:'',speaker_type:'debtor_attorney',name_audio_at:'2026-08-15T10:00:00Z'},
  {id:'s2',full_name:'Hon. Pat Ellery',preferred_title:'Judge',firm:'Court',
   email:'p@court.gov',phone:'',pronunciation:'',speaker_type:'judge'}];
 const spk=id=>({id,full_name:roster.find(r=>r.id===id).full_name});
@@ -125,6 +125,22 @@ check('speaker with no programs:',[
 view={...base,tab:'roster'}; render(); h=global.__a.innerHTML;
 check('roster:',[
  ['add-a-speaker box', ()=>h.includes('id="rs-new"')&&h.includes('id="rs-add"')],
+]);
+
+
+// ---- spoken name ----
+view={...base,tab:'roster'}; render(); h=global.__a.innerHTML;
+check('roster, spoken name:',[
+ ['badge on the one with audio', ()=>h.includes('&#x25B8; name')||h.includes('▸ name')],
+ ['not on the one without', ()=>(h.match(/▸ name/g)||[]).length===1],
+]);
+view={...base,tab:'roster',speakerId:'s1'}; render(); h=global.__a.innerHTML;
+check('speaker page:',[
+ ['hear button present', ()=>h.includes('data-hear="s1"')],
+]);
+view={...base,tab:'roster',speakerId:'s2'}; render(); h=global.__a.innerHTML;
+check('speaker with no recording:',[
+ ['no hear button', ()=>!h.includes('data-hear=')],
 ]);
 
 process.exit(fails?1:0);

@@ -367,11 +367,11 @@ async function loadData() {
       archived, venue, location, store_url, recording_url,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, address, email, phone, pronunciation,
-                   headshot_location, bio_location, speaker_type ),
+                   headshot_location, bio_location, speaker_type, name_audio_at ),
         deliverables ( id, item, received ) ),
       tasks ( id, offset_days, seq, task, owner_role, source_ref, is_gate, gate_key, done, done_by )`)
       .order("event_date"),
-    sb.from("speakers").select("id, full_name, preferred_title, firm, email, phone, pronunciation, speaker_type, notes").order("full_name"),
+    sb.from("speakers").select("id, full_name, preferred_title, firm, email, phone, pronunciation, speaker_type, notes, name_audio_at").order("full_name"),
     sb.from("speaker_links")
       .select("program_speaker_id, token, open_count, last_opened_at, revoked"),
     sb.from("speaker_uploads")
@@ -420,6 +420,21 @@ async function loadHistory(programId) {
   } catch (e) {
     history = [];
   }
+}
+
+let audioCache = {};
+async function playName(id){
+  if (audioCache[id]) { new Audio(audioCache[id]).play(); return; }
+  toast("Fetching…");
+  const { data, error } = await sb.rpc("name_audio", { p_speaker: id });
+  if (error || !data) { toast("No recording for that speaker", true); return; }
+  try {
+    const bin = atob(data.b64), buf = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+    audioCache[id] = URL.createObjectURL(new Blob([buf], { type: data.mime }));
+    new Audio(audioCache[id]).play();
+    toast("Playing " + (data.name || ""));
+  } catch (e) { toast("Could not play that recording", true); }
 }
 
 async function saveRosterSpeaker(id){
@@ -766,7 +781,8 @@ function renderRoster(){
       '<span class="cat-tag">'+esc(catName(id))+"</span>").join("");
     const meta = [typeLabel(s.speaker_type), s.firm, s.email].filter(Boolean).join(" · ");
     return '<button class="card" data-speaker="'+s.id+'" style="gap:.5rem">' +
-      '<div class="card-top"><span class="sp-name">'+esc(s.full_name)+"</span>" +
+      '<div class="card-top"><span class="sp-name">'+esc(s.full_name)+
+      (s.name_audio_at ? ' <span class="cat-tag">▸ name</span>' : "")+"</span>" +
       '<span class="card-days">'+hist.length+(hist.length===1?" program":" programs")+"</span></div>" +
       (meta ? '<div class="sp-meta">'+esc(meta)+"</div>" : "") +
       (tags ? '<div class="cat-tags">'+tags+"</div>" : "") +
@@ -831,7 +847,9 @@ function renderSpeaker(){
 
   return chrome(
     '<button class="back" data-roster>← All speakers</button>' +
-    '<div class="detail-head"><h2>'+esc(s.full_name)+"</h2>" +
+    '<div class="detail-head"><h2>'+esc(s.full_name)+
+      (s.name_audio_at ? ' <button class="btn" data-hear="'+s.id+
+        '" style="vertical-align:middle;margin-left:.5rem">▸ Hear their name</button>' : "")+"</h2>" +
       '<p class="desc">'+ hist.length + (hist.length===1?" program":" programs") +
       (hist.length ? " · first " + esc(FMT_CARD.format(parseISO(hist[hist.length-1].p.event_date))) +
         ", most recent " + esc(FMT_CARD.format(parseISO(hist[0].p.event_date))) : "") + "</p></div>" +
@@ -1055,7 +1073,9 @@ function renderDetail(){
         '<button class="mini" data-email="'+ps.id+'">Copy email</button>'+
         '<button class="mini" data-emailprev="'+ps.id+'">Preview email</button>'
       : '<button class="mini" data-newlink="'+ps.id+'">Create packet link</button>';
-    return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+"</div>"+
+    return '<div class="sp-row"><div><div class="sp-name">'+esc(s.full_name)+
+      (s.name_audio_at ? ' <button class="mini" data-hear="'+s.id+
+        '" title="Hear them say their name">▸ hear</button>' : "")+"</div>"+
       (meta?'<div class="sp-meta">'+esc(meta)+"</div>":"")+
       (linkMeta?'<div class="sp-meta" style="color:var(--accent)">'+esc(linkMeta)+"</div>":"")+
       "</div>"+
@@ -1433,6 +1453,9 @@ function wire(){
     const p = programs.find(x => x.id === view.id);
     previewInvitation(p, p.program_speakers.find(x => x.id === el.getAttribute("data-emailprev")));
   });
+
+  on("[data-hear]","click",(el,e)=>{ e?.stopPropagation?.();
+    playName(el.getAttribute("data-hear")); });
 
   on("[data-speaker]","click",el=>{
     view={ ...view, tab:"roster", speakerId: el.getAttribute("data-speaker"), editRoster:false };

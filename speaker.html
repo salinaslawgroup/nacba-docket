@@ -172,6 +172,26 @@
   .more-body li{margin-bottom:.4rem;font-size:.95rem;line-height:1.58}
   .more-body a{color:var(--accent)}
 
+  /* say-my-name recorder */
+  .rec{margin-top:.9rem;padding-top:.85rem;border-top:1px solid var(--rule)}
+  .rec-head{font-size:.82rem;font-weight:600;color:var(--muted);margin:0 0 .5rem}
+  .rec-row{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .rec-btn{background:var(--surface);border:1px solid var(--rule-strong);border-radius:100px;
+    padding:.45rem .95rem;font-size:.88rem;font-weight:600;color:var(--accent);cursor:pointer;
+    display:inline-flex;align-items:center;gap:.45rem}
+  .rec-btn:hover{border-color:var(--accent)}
+  .rec-btn[disabled]{opacity:.5;cursor:default}
+  .rec-btn.on{background:var(--critical);border-color:var(--critical);color:#fff}
+  .rec-dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none}
+  .rec-btn.on .rec-dot{animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.rec-btn.on .rec-dot{animation:none}}
+  .rec-status{font-size:.86rem;color:var(--muted)}
+  .rec-status.ok{color:var(--ok)} .rec-status.err{color:var(--critical)}
+  .rec-file{font-size:.82rem;color:var(--faint)}
+  .rec-file input{font-size:.82rem;max-width:15rem}
+  audio{height:34px;max-width:100%}
+
   ul.plain{margin:0;padding-left:1.15rem}
   ul.plain li{margin-bottom:.5rem;font-size:.93rem}
   ul.plain li:last-child{margin-bottom:0}
@@ -473,9 +493,18 @@ function render(d) {
     (d.speaker.email ? "<dt>Email</dt><dd>" + esc(d.speaker.email) + "</dd>" : "") +
     (d.speaker.pronunciation ? "<dt>Say</dt><dd>" + esc(d.speaker.pronunciation) + "</dd>" : "") +
     "</dl></div>" +
-    '<p class="sub" style="margin:.7rem 0 0">Anything wrong — especially how your name ' +
-    "should be pronounced — please tell your coordinator. This is what we use to " +
-    "introduce you on air.</p></section>";
+    '<div class="rec"><p class="rec-head">Say your name</p>' +
+    '<p class="sub" style="margin:0 0 .6rem">A few seconds is plenty. Your moderator ' +
+    "listens to this before introducing you, so it is worth more than any spelling.</p>" +
+    '<div class="rec-row">' +
+      '<button class="rec-btn" id="rec-go"><span class="rec-dot"></span>Record</button>' +
+      '<button class="rec-btn" id="rec-play" hidden>Play</button>' +
+      '<button class="rec-btn" id="rec-clear" hidden>Remove</button>' +
+    "</div>" +
+    '<p class="rec-status" id="rec-status">' +
+      (d.speaker.has_name_audio ? "We have a recording of your name." : "") + "</p>" +
+    '<p class="rec-file">Or upload one: <input type="file" id="rec-file" accept="audio/*"></p>' +
+    "</div></section>";
 
   const uploadPanel =
     "<section id=\"upload\"><h2>Send us your materials</h2>" +
@@ -537,6 +566,7 @@ function render(d) {
     esc(FMT_DATE.format(todayUTC())) + "</span></p></footer>";
 
   document.getElementById("print")?.addEventListener("click", () => window.print());
+  wireRecorder(d);
 
   /* jump from a deadline row straight into the uploader, preselected */
   document.querySelectorAll("[data-jump]").forEach(el =>
@@ -607,6 +637,108 @@ window.addEventListener("afterprint", () => {
   reopened.forEach(d => { d.open = false; });
   reopened = [];
 });
+
+/* Recording the speaker's own name. MediaRecorder needs a secure context
+   and permission; where it is unavailable the file picker still works, so
+   a voice memo from a phone does the same job. */
+function wireRecorder(d){
+  const go     = document.getElementById("rec-go");
+  const play   = document.getElementById("rec-play");
+  const clear  = document.getElementById("rec-clear");
+  const file   = document.getElementById("rec-file");
+  const status = document.getElementById("rec-status");
+  if (!go) return;
+
+  const say = (t, cls) => { status.textContent = t; status.className = "rec-status " + (cls||""); };
+  let rec = null, chunks = [], stream = null, timer = null, url = null;
+
+  const canRecord = !!(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+  if (!canRecord) {
+    go.hidden = true;
+    say("Recording is not available in this browser — please upload a file instead.");
+  }
+  if (d.speaker.has_name_audio) { play.hidden = false; clear.hidden = false; }
+
+  const b64 = blob => new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(String(r.result).split(",")[1] || "");
+    r.onerror = () => rej(new Error("read failed"));
+    r.readAsDataURL(blob);
+  });
+
+  async function save(blob, mime){
+    if (blob.size > 2*1024*1024) {
+      say("That is over 2 MB. A few seconds is all we need.", "err"); return;
+    }
+    say("Saving…");
+    try {
+      const { data: r, error } = await sb.rpc("speaker_record_name",
+        { tok, p_mime: mime || blob.type || "audio/webm", p_b64: await b64(blob) });
+      if (error || !r?.ok) { say(r?.error || "That did not save. Please try again.", "err"); return; }
+      d.speaker.has_name_audio = true;
+      play.hidden = false; clear.hidden = false;
+      say("Saved — thank you.", "ok");
+    } catch (e) { say("That did not save. Please try again.", "err"); }
+  }
+
+  function stop(){
+    if (rec && rec.state !== "inactive") rec.stop();
+    stream?.getTracks().forEach(t => t.stop());
+    clearTimeout(timer);
+    go.classList.remove("on");
+    go.innerHTML = '<span class="rec-dot"></span>Record';
+  }
+
+  go?.addEventListener("click", async () => {
+    if (rec && rec.state === "recording") { stop(); return; }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      say("We could not reach your microphone. Check the browser's permission, or upload a file.", "err");
+      return;
+    }
+    chunks = [];
+    rec = new MediaRecorder(stream);
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+      if (url) URL.revokeObjectURL(url);
+      url = URL.createObjectURL(blob);
+      if (blob.size) save(blob, rec.mimeType);
+    };
+    rec.start();
+    go.classList.add("on");
+    go.innerHTML = '<span class="rec-dot"></span>Stop';
+    say("Recording — say your name, then press stop.");
+    timer = setTimeout(stop, 10000);          // nobody needs longer than ten seconds
+  });
+
+  play?.addEventListener("click", async () => {
+    if (url) { new Audio(url).play(); return; }
+    say("Fetching…");
+    const { data, error } = await sb.rpc("speaker_name_audio", { tok });
+    if (error || !data) { say("We could not play that back.", "err"); return; }
+    const bin = atob(data.b64), buf = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+    url = URL.createObjectURL(new Blob([buf], { type: data.mime }));
+    say(""); new Audio(url).play();
+  });
+
+  clear?.addEventListener("click", async () => {
+    if (!confirm("Remove your name recording?")) return;
+    const { data: r } = await sb.rpc("speaker_record_name", { tok, p_mime: "", p_b64: "" });
+    if (r?.ok) {
+      d.speaker.has_name_audio = false;
+      if (url) { URL.revokeObjectURL(url); url = null; }
+      play.hidden = true; clear.hidden = true; say("Removed.");
+    } else say("That did not work. Please try again.", "err");
+  });
+
+  file?.addEventListener("change", () => {
+    const f = file.files && file.files[0];
+    if (f) save(f, f.type);
+  });
+}
 
 (async function () {
   tok = new URLSearchParams(location.search).get("k") || location.hash.replace(/^#/, "");

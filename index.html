@@ -104,6 +104,8 @@
   .cat-tag{background:var(--accent-soft);color:var(--accent);border-radius:100px;
     padding:.12rem .55rem;font-size:.74rem;font-weight:600;white-space:nowrap}
   .cat-filter{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 1.25rem}
+  .callout-note{background:var(--accent-soft);border-left:3px solid var(--brand);
+    border-radius:0 4px 4px 0;padding:.9rem 1.1rem;font-size:.93rem;color:var(--ink)}
 
   /* ---- alerts ---- */
   .alerts{margin-bottom:2rem}
@@ -278,6 +280,15 @@ const GATE_LABELS = [
   { key:"runofshow", label:"Run of show" }
 ];
 const CONFIRMATIONS = ["invited","asked","confirmed","declined"];
+const ACCESS_ROLES = [
+  { id:"admin",       label:"Administrator", note:"Can add and remove people" },
+  { id:"coordinator", label:"Coordinator",   note:"Runs programs day to day" },
+  { id:"moderator",   label:"Moderator",     note:"Hosts the live webinar" },
+  { id:"marketing",   label:"Marketing",     note:"Graphics and promotion" },
+  { id:"emc_chair",   label:"EMC Chair",     note:"Education Committee chair" },
+  { id:"staff",       label:"Staff",         note:"General access" }
+];
+const roleLabel = r => (ACCESS_ROLES.find(x => x.id === r) || {}).label || r;
 const PROGRAM_KINDS = [
   { id:"paid",              label:"Paid webinar (CLE)" },
   { id:"vendor",            label:"Vendor program (sponsored, free, no CLE)" },
@@ -318,7 +329,7 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
 let session=null, programs=[], roster=[], history=[], links={}, uploads={},
-    categories=[], progCats={}, spkCats={}, busy=false;
+    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null, creating:false, cat:null };
 const app = document.getElementById("app");
 
@@ -346,7 +357,7 @@ function renderGate(msg, kind) {
 
 /* ================= data ================= */
 async function loadData() {
-  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes] = await Promise.all([
+  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes, tRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note, kind,
       program_speakers ( id, topic, confirmation, sort_order,
         speakers ( id, full_name, preferred_title, firm, address, email, phone, pronunciation,
@@ -363,7 +374,8 @@ async function loadData() {
     sb.from("categories").select("id, name, sort_order, active")
       .eq("active", true).order("name"),
     sb.from("program_categories").select("program_id, category_id"),
-    sb.from("speaker_categories").select("speaker_id, category_id")
+    sb.from("speaker_categories").select("speaker_id, category_id"),
+    sb.from("allowed_emails").select("email, role, full_name, title, added_at").order("email")
   ]);
   if (pRes.error) throw pRes.error;
   programs = (pRes.data||[]).map(p => ({ ...p,
@@ -383,6 +395,9 @@ async function loadData() {
     (progCats[r.program_id] = progCats[r.program_id] || []).push(r.category_id); });
   (scRes.error ? [] : (scRes.data||[])).forEach(r => {
     (spkCats[r.speaker_id] = spkCats[r.speaker_id] || []).push(r.category_id); });
+  team = tRes.error ? [] : (tRes.data || []);
+  const me = (session?.user?.email || "").toLowerCase();
+  myRole = (team.find(t => (t.email||"").toLowerCase() === me) || {}).role || "staff";
 }
 
 /* Change history. Deliberately forgiving: history is a nicety, and a
@@ -400,6 +415,24 @@ async function loadHistory(programId) {
     history = [];
   }
 }
+
+async function addUser() {
+  const email = val("nu-email").toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("That email doesn't look right", true); return; }
+  if (team.some(t => (t.email||"").toLowerCase() === email)) {
+    toast(email + " already has access", true); return;
+  }
+  await mutate(() => sb.from("allowed_emails").insert({
+    email, role: val("nu-role") || "coordinator",
+    full_name: val("nu-name"), title: val("nu-title")
+  }), email + " can now sign in");
+}
+
+const setUserRole = (email, role) =>
+  mutate(() => sb.from("allowed_emails").update({ role }).eq("email", email));
+
+const removeUser = email =>
+  mutate(() => sb.from("allowed_emails").delete().eq("email", email), "Access removed");
 
 const catName = id => (categories.find(c => c.id === id) || {}).name || "";
 
@@ -656,14 +689,68 @@ function chrome(inner){
     "<h1>Webinar Docket</h1></div><div class=\"masthead-right\">" +
     '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
     esc(session?.user?.email||"") + '</span><div class="btn-row">' +
+    '<button class="btn" id="team-btn">Team</button>' +
     '<button class="btn" id="hist-all">History</button>' +
     '<button class="btn" id="signout">Sign out</button></div></div></header>' + inner +
     '<footer><span>2026 season · '+programs.length+" programs</span>" +
     "<span>Shared · saves for everyone</span></footer>";
 }
 
+function renderTeam(){
+  const admin = myRole === "admin";
+  const adminCount = team.filter(t => t.role === "admin").length;
+
+  const rows = team.length ? team.map(t => {
+    const last = adminCount <= 1 && t.role === "admin";
+    return '<div class="sp-row"><div>' +
+      '<div class="sp-name">' + esc(t.full_name || t.email.split("@")[0]) +
+        (t.title ? ' <span class="cat-tag">' + esc(t.title) + "</span>" : "") + "</div>" +
+      '<div class="sp-meta">' + esc(t.email) + "</div></div>" +
+      '<div class="sp-actions">' +
+      (admin && !last
+        ? '<select class="conf" data-role="' + esc(t.email) + '">' + ACCESS_ROLES.map(r =>
+            '<option value="' + r.id + '"' + (t.role === r.id ? " selected" : "") + ">" +
+            esc(r.label) + "</option>").join("") + "</select>"
+        : '<span class="chip chip-ok">' + esc(roleLabel(t.role)) + "</span>") +
+      (admin && !last
+        ? '<button class="mini danger" data-rmuser="' + esc(t.email) + '">Remove</button>'
+        : (last ? '<span class="sp-meta">only administrator</span>' : "")) +
+      "</div></div>";
+  }).join("") : '<p class="empty-note">Nobody on the list yet.</p>';
+
+  const addForm = admin
+    ? '<section class="panel"><p class="panel-head"><span>Add someone</span>' +
+      "<span>they sign in with a link</span></p><div class=\"form\">" +
+      '<div class="form-row">' +
+      '<div class="field"><label class="field-label" for="nu-email">Work email</label>' +
+      '<input type="email" id="nu-email" placeholder="them@nacba.com"></div>' +
+      '<div class="field"><label class="field-label" for="nu-name">Name</label>' +
+      '<input type="text" id="nu-name" placeholder="Their name"></div></div>' +
+      '<div class="form-row">' +
+      '<div class="field"><label class="field-label" for="nu-title">Title (optional)</label>' +
+      '<input type="text" id="nu-title" placeholder="President, EMC Chair, Coordinator…"></div>' +
+      '<div class="field"><label class="field-label" for="nu-role">Access</label>' +
+      '<select id="nu-role">' + ACCESS_ROLES.map(r =>
+        '<option value="' + r.id + '"' + (r.id === "coordinator" ? " selected" : "") + ">" +
+        esc(r.label) + " — " + esc(r.note) + "</option>").join("") + "</select></div></div>" +
+      '<div class="form-actions"><button class="btn primary" id="nu-add">Give them access</button>' +
+      '</div></div></section>'
+    : '<div class="callout-note">Only an administrator can change who has access.</div>';
+
+  return chrome(
+    '<button class="back" data-back>← All programs</button>' +
+    '<section class="panel"><p class="panel-head"><span>Who has access</span><span>' +
+      team.length + (team.length === 1 ? " person" : " people") + "</span></p>" +
+      rows + "</section>" + addForm +
+    '<p class="sub" style="max-width:60ch;color:var(--muted);font-size:.9rem">' +
+    "Adding an email authorises it — it does not create an account or send anything. " +
+    "The person goes to this site, enters that email, and gets a sign-in link. Until " +
+    "their address is on this list they can sign in and still see nothing.</p>");
+}
+
 function renderSeason(){
   if (view.creating) return chrome(newProgramForm());
+  if (view.tab==="team") return renderTeam();
   if (view.tab==="history") return chrome(historyPanel(null));
 
   const upcoming=programs.filter(p=>!isPast(p)), past=programs.filter(isPast);
@@ -1036,6 +1123,12 @@ function wire(){
   document.getElementById("signout")?.addEventListener("click", async ()=>{
     await sb.auth.signOut(); session=null; renderGate();
   });
+  document.getElementById("team-btn")?.addEventListener("click", ()=>{
+    view={ name:"season", tab:"team", id:null, edit:false, editSpeaker:null,
+           creating:false, cat:view.cat };
+    render(); window.scrollTo(0,0);
+  });
+  document.getElementById("nu-add")?.addEventListener("click", addUser);
   document.getElementById("hist-all")?.addEventListener("click", ()=>{
     history = [];
     view={ name:"season", tab:"history", id:null, edit:false, editSpeaker:null, creating:false, cat:view.cat };
@@ -1096,6 +1189,13 @@ function wire(){
   on("[data-emailprev]","click",el=>{
     const p = programs.find(x => x.id === view.id);
     previewInvitation(p, p.program_speakers.find(x => x.id === el.getAttribute("data-emailprev")));
+  });
+
+  on("[data-role]","change",el=>setUserRole(el.getAttribute("data-role"), el.value));
+  on("[data-rmuser]","click",el=>{
+    const e = el.getAttribute("data-rmuser");
+    if (confirm("Remove access for " + e + "?\n\nThey keep their sign-in but will see nothing."))
+      removeUser(e);
   });
 
   on("[data-cat]","click",el=>toggleCat(

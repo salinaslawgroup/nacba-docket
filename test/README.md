@@ -13,3 +13,8 @@ It exists because of two bugs that shipped on 14 Aug 2026:
 Both passed a review of the source and a test of `render()`. Neither could
 have survived a test that clicked something and asserted on the rendered
 output. Check the result, not the edit.
+
+    node test/team.js
+
+Checks the Team screen renders the right controls for an administrator, hides
+them from everyone else, and protects the last remaining administrator.

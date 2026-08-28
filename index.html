@@ -300,6 +300,15 @@ const PROGRAM_KINDS = [
   { id:"workshop",          label:"Workshop (in person)" }
 ];
 const IN_PERSON = k => k === "conference" || k === "workshop";
+const IDEA_STATUS = [
+  { id:"idea",        label:"Idea" },
+  { id:"considering", label:"Considering" },
+  { id:"approved",    label:"Approved" },
+  { id:"scheduled",   label:"Scheduled" },
+  { id:"declined",    label:"Declined" }
+];
+const statusLabel = s => (IDEA_STATUS.find(x => x.id === s) || {}).label || s;
+
 const kindLabel = k => (PROGRAM_KINDS.find(x => x.id === (k||"paid")) || {}).label || "";
 const SPEAKER_TYPES = [
   { id:"",                    label:"— not recorded —" },
@@ -334,9 +343,10 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
 let session=null, programs=[], roster=[], history=[], links={}, uploads={},
-    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", busy=false;
+    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", ideas=[], ideaCats={}, busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null,
-  creating:false, cat:null, speakerId:null, q:"", stype:null, editRoster:false };
+  creating:false, cat:null, speakerId:null, q:"", stype:null, editRoster:false,
+  istatus:null, editIdea:null };
 const app = document.getElementById("app");
 
 /* ================= sign in ================= */
@@ -363,7 +373,7 @@ function renderGate(msg, kind) {
 
 /* ================= data ================= */
 async function loadData() {
-  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes, tRes] = await Promise.all([
+  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes, tRes, iRes, icRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note, kind,
       archived, venue, location, store_url, recording_url,
       program_speakers ( id, topic, confirmation, sort_order,
@@ -382,7 +392,9 @@ async function loadData() {
       .eq("active", true).order("name"),
     sb.from("program_categories").select("program_id, category_id"),
     sb.from("speaker_categories").select("speaker_id, category_id"),
-    sb.from("allowed_emails").select("email, role, full_name, title, added_at").order("email")
+    sb.from("allowed_emails").select("email, role, full_name, title, added_at").order("email"),
+    sb.from("program_ideas").select("*").order("created_at", { ascending:false }),
+    sb.from("idea_categories").select("idea_id, category_id")
   ]);
   if (pRes.error) throw pRes.error;
   programs = (pRes.data||[]).map(p => ({ ...p,
@@ -403,6 +415,10 @@ async function loadData() {
   (scRes.error ? [] : (scRes.data||[])).forEach(r => {
     (spkCats[r.speaker_id] = spkCats[r.speaker_id] || []).push(r.category_id); });
   team = tRes.error ? [] : (tRes.data || []);
+  ideas = iRes.error ? [] : (iRes.data || []);
+  ideaCats = {};
+  (icRes.error ? [] : (icRes.data||[])).forEach(r => {
+    (ideaCats[r.idea_id] = ideaCats[r.idea_id] || []).push(r.category_id); });
   const me = (session?.user?.email || "").toLowerCase();
   myRole = (team.find(t => (t.email||"").toLowerCase() === me) || {}).role || "staff";
 }
@@ -436,6 +452,62 @@ async function playName(id){
     new Audio(audioCache[id]).play();
     toast("Playing " + (data.name || ""));
   } catch (e) { toast("Could not play that recording", true); }
+}
+
+async function addIdea(){
+  const t = val("ni-title");
+  if (!t) { toast("Give it a title", true); return; }
+  await mutate(() => sb.from("program_ideas").insert({
+    title: t, description: val("ni-desc"), rationale: val("ni-why"),
+    speakers_idea: val("ni-spk"), target_period: val("ni-when"), source: val("ni-src")
+  }), "Idea added");
+}
+
+async function saveIdea(id){
+  const t = val("ie-title");
+  if (!t) { toast("Give it a title", true); return; }
+  view.editIdea = null;
+  await mutate(() => sb.from("program_ideas").update({
+    title: t, description: val("ie-desc"), rationale: val("ie-why"),
+    speakers_idea: val("ie-spk"), target_period: val("ie-when"), source: val("ie-src")
+  }).eq("id", id));
+}
+
+const setIdeaStatus = (id, status) =>
+  mutate(() => sb.from("program_ideas").update({ status }).eq("id", id));
+
+const deleteIdea = id =>
+  mutate(() => sb.from("program_ideas").delete().eq("id", id), "Idea removed");
+
+/* Scheduling turns an idea into a real program: it gets a date, a docket,
+   and the idea keeps a link so the season can say where it came from. */
+async function scheduleIdea(id){
+  const i = ideas.find(x => x.id === id);
+  if (!i) return;
+  const date = window.prompt(
+    "What date? (YYYY-MM-DD)\n\n" + i.title +
+    "\n\nThis creates the program and generates its docket.", "");
+  if (!date) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast("Use YYYY-MM-DD", true); return; }
+
+  await mutate(async () => {
+    const ins = await sb.from("programs").insert({
+      slug: slugFor(date, i.title), event_date: date, title: i.title,
+      kind: "paid", description: i.description,
+      note: i.speakers_idea ? "From an idea. Possible speakers: " + i.speakers_idea : "From an idea."
+    }).select("id").single();
+    if (ins.error) return ins;
+
+    // carry the categories across
+    const cats = ideaCats[i.id] || [];
+    if (cats.length) {
+      const r = await sb.from("program_categories")
+        .insert(cats.map(c => ({ program_id: ins.data.id, category_id: c })));
+      if (r.error) return r;
+    }
+    return await sb.from("program_ideas")
+      .update({ status: "scheduled", program_id: ins.data.id }).eq("id", i.id);
+  }, "Scheduled — the docket is generated");
 }
 
 async function saveRosterSpeaker(id){
@@ -495,8 +567,12 @@ function catChips(kind, owner, on) {
 }
 
 async function toggleCat(kind, owner, id, isOn) {
-  const table = kind === "program" ? "program_categories" : "speaker_categories";
-  const col   = kind === "program" ? "program_id" : "speaker_id";
+  const table = kind === "program" ? "program_categories"
+              : kind === "idea"    ? "idea_categories"
+              : "speaker_categories";
+  const col   = kind === "program" ? "program_id"
+              : kind === "idea"    ? "idea_id"
+              : "speaker_id";
   await mutate(() => isOn
     ? sb.from(table).delete().eq(col, owner).eq("category_id", id)
     : sb.from(table).insert({ [col]: owner, category_id: id }));
@@ -746,7 +822,8 @@ function chrome(inner){
     '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
     esc(session?.user?.email||"") + '</span><div class="btn-row">' +
     nav("programs-btn","Programs", view.name==="detail" ||
-        (view.name==="season" && !["roster","team","history"].includes(view.tab))) +
+        (view.name==="season" && !["roster","team","history","ideas"].includes(view.tab))) +
+    nav("ideas-btn","Ideas",     view.tab==="ideas") +
     nav("roster-btn","Speakers", view.tab==="roster") +
     nav("team-btn","Team",       view.tab==="team") +
     '<button class="btn" id="signout">Sign out</button></div></div></header>' + inner +
@@ -903,6 +980,102 @@ function rosterSpeakerForm(s){
     "</div></div></section>";
 }
 
+function renderIdeas(){
+  const shown = view.istatus
+    ? ideas.filter(i => i.status === view.istatus)
+    : ideas.filter(i => i.status !== "declined");   // declined stay out of the way
+
+  const counts = {};
+  IDEA_STATUS.forEach(s => counts[s.id] = ideas.filter(i => i.status === s.id).length);
+
+  const filter = '<div class="cat-filter">' + IDEA_STATUS.map(s =>
+      '<button class="chip-t'+(view.istatus===s.id?" is-on":"")+'" data-istat="'+s.id+'">'+
+      esc(s.label)+' <span style="opacity:.6">'+counts[s.id]+"</span></button>").join("") +
+    (view.istatus ? '<button class="chip-t" data-istat="">Show open ideas</button>' : "") +
+    "</div>";
+
+  const rows = shown.length ? shown.map(i => {
+    const tags = (ideaCats[i.id]||[]).map(id =>
+      '<span class="cat-tag">'+esc(catName(id))+"</span>").join("");
+    const prog = i.program_id ? programs.find(p => p.id === i.program_id) : null;
+    return '<section class="panel" style="margin-bottom:.85rem">' +
+      '<div class="sp-row" style="border:none;padding:0"><div>' +
+        '<div class="sp-name" style="font-size:1.05rem">'+esc(i.title)+"</div>" +
+        (i.description ? '<p class="sub" style="margin:.3rem 0 0;max-width:60ch">'+
+          esc(i.description)+"</p>" : "") +
+        (i.rationale ? '<p class="sub" style="margin:.35rem 0 0;max-width:60ch"><b>Why: </b>'+
+          esc(i.rationale)+"</p>" : "") +
+        (i.speakers_idea ? '<div class="sp-meta" style="margin-top:.35rem">Possible speakers: '+
+          esc(i.speakers_idea)+"</div>" : "") +
+        (tags ? '<div class="cat-tags" style="margin-top:.4rem">'+tags+"</div>" : "") +
+        '<div class="sp-meta" style="margin-top:.4rem">' +
+          (i.target_period ? "Target: "+esc(i.target_period)+" · " : "") +
+          (i.source ? esc(i.source)+" · " : "") +
+          "suggested by "+esc((i.suggested_by||"someone").split("@")[0]) +
+          (prog ? " · scheduled for "+esc(FMT_CARD.format(parseISO(prog.event_date))) : "") +
+        "</div></div>" +
+      '<div class="sp-actions">' +
+        '<select class="conf" data-istatus="'+i.id+'">'+IDEA_STATUS.map(s =>
+          '<option value="'+s.id+'"'+(i.status===s.id?" selected":"")+">"+esc(s.label)+
+          "</option>").join("")+"</select>" +
+        (prog ? '<button class="mini" data-open="'+prog.id+'">Open program</button>'
+              : '<button class="mini" data-schedule="'+i.id+'">Schedule it</button>') +
+        '<button class="mini" data-iedit="'+i.id+'">Edit</button>' +
+        '<button class="mini danger" data-idel="'+i.id+'" data-t="'+esc(i.title)+'">Delete</button>' +
+      "</div></div>" +
+      (view.editIdea === i.id ? ideaForm(i) : "") +
+      '<div style="margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--rule)">' +
+        catChips("idea", i.id, ideaCats[i.id]||[]) + "</div>" +
+      "</section>";
+  }).join("") : '<p class="empty-note">Nothing here yet.</p>';
+
+  return chrome(
+    '<button class="back" data-back>← All programs</button>' +
+    '<h2 style="font-size:1.4rem;margin:0 0 .3rem">Programme ideas</h2>' +
+    '<p class="sub" style="color:var(--muted);margin:0 0 1.1rem">' +
+    "What we might run, before it has a date. Schedule one and it becomes a program " +
+    "with its own docket.</p>" + filter +
+    '<section class="panel" style="margin-bottom:1.5rem">' +
+      '<p class="panel-head"><span>Add an idea</span><span>a title is enough to start</span></p>' +
+      '<div class="form"><div class="field">' +
+      '<label class="field-label" for="ni-title">Title</label>' +
+      '<input type="text" id="ni-title" placeholder="Working title"></div>' +
+      '<div class="field"><label class="field-label" for="ni-desc">What it covers</label>' +
+      '<textarea id="ni-desc" placeholder="A sentence or two"></textarea></div>' +
+      '<div class="form-row">' +
+      '<div class="field"><label class="field-label" for="ni-why">Why now</label>' +
+      '<input type="text" id="ni-why" placeholder="A new decision, a member request, a gap"></div>' +
+      '<div class="field"><label class="field-label" for="ni-spk">Possible speakers</label>' +
+      '<input type="text" id="ni-spk" placeholder="Names, however loose"></div></div>' +
+      '<div class="form-row">' +
+      '<div class="field"><label class="field-label" for="ni-when">Target period</label>' +
+      '<input type="text" id="ni-when" placeholder="Q2 2027, or after the convention"></div>' +
+      '<div class="field"><label class="field-label" for="ni-src">Where it came from</label>' +
+      '<input type="text" id="ni-src" placeholder="Member request, committee, speaker pitch"></div></div>' +
+      '<div class="form-actions"><button class="btn primary" id="ni-add">Add idea</button>' +
+      "</div></div></section>" + rows);
+}
+
+function ideaForm(i){
+  return '<div class="form" style="margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--rule)">' +
+    '<div class="field"><label class="field-label" for="ie-title">Title</label>' +
+    '<input type="text" id="ie-title" value="'+esc(i.title)+'"></div>' +
+    '<div class="field"><label class="field-label" for="ie-desc">What it covers</label>' +
+    "<textarea id=\"ie-desc\">"+esc(i.description)+"</textarea></div>" +
+    '<div class="form-row">' +
+    '<div class="field"><label class="field-label" for="ie-why">Why now</label>' +
+    '<input type="text" id="ie-why" value="'+esc(i.rationale)+'"></div>' +
+    '<div class="field"><label class="field-label" for="ie-spk">Possible speakers</label>' +
+    '<input type="text" id="ie-spk" value="'+esc(i.speakers_idea)+'"></div></div>' +
+    '<div class="form-row">' +
+    '<div class="field"><label class="field-label" for="ie-when">Target period</label>' +
+    '<input type="text" id="ie-when" value="'+esc(i.target_period)+'"></div>' +
+    '<div class="field"><label class="field-label" for="ie-src">Where it came from</label>' +
+    '<input type="text" id="ie-src" value="'+esc(i.source)+'"></div></div>' +
+    '<div class="form-actions"><button class="btn primary" id="ie-save" data-id="'+i.id+
+    '">Save</button><button class="btn" id="ie-cancel">Cancel</button></div></div>';
+}
+
 function renderTeam(){
   const admin = myRole === "admin";
   const adminCount = team.filter(t => t.role === "admin").length;
@@ -958,6 +1131,7 @@ function renderTeam(){
 function renderSeason(){
   if (view.creating) return chrome(newProgramForm());
   if (view.tab==="team") return renderTeam();
+  if (view.tab==="ideas") return renderIdeas();
   if (view.tab==="roster") return view.speakerId ? renderSpeaker() : renderRoster();
   if (view.tab==="history") return chrome(historyPanel(null));
 
@@ -1377,6 +1551,17 @@ function wire(){
            edit:false, editSpeaker:null, editRoster:false, creating:false };
     render(); window.scrollTo(0,0);
   });
+  document.getElementById("ideas-btn")?.addEventListener("click", ()=>{
+    view={ name:"season", tab:"ideas", id:null, speakerId:null, q:"", cat:null, stype:null,
+           edit:false, editSpeaker:null, editRoster:false, creating:false,
+           istatus:null, editIdea:null };
+    render(); window.scrollTo(0,0);
+  });
+  document.getElementById("ni-add")?.addEventListener("click", addIdea);
+  document.getElementById("ie-save")?.addEventListener("click", ()=>
+    saveIdea(document.getElementById("ie-save").getAttribute("data-id")));
+  document.getElementById("ie-cancel")?.addEventListener("click", ()=>{
+    view={ ...view, editIdea:null }; render(); });
   document.getElementById("roster-btn")?.addEventListener("click", ()=>{
     view={ name:"season", tab:"roster", id:null, speakerId:null, q:"", cat:null, stype:null,
            edit:false, editSpeaker:null, creating:false };
@@ -1467,6 +1652,17 @@ function wire(){
     const p = programs.find(x => x.id === view.id);
     previewInvitation(p, p.program_speakers.find(x => x.id === el.getAttribute("data-emailprev")));
   });
+
+  on("[data-istat]","click",el=>{
+    view={ ...view, istatus: el.getAttribute("data-istat") || null }; render(); });
+  on("[data-istatus]","change",el=>
+    setIdeaStatus(el.getAttribute("data-istatus"), el.value));
+  on("[data-iedit]","click",el=>{
+    view={ ...view, editIdea: el.getAttribute("data-iedit") }; render(); });
+  on("[data-schedule]","click",el=>scheduleIdea(el.getAttribute("data-schedule")));
+  on("[data-idel]","click",el=>{
+    if (confirm("Delete the idea \"" + el.getAttribute("data-t") + "\"?"))
+      deleteIdea(el.getAttribute("data-idel")); });
 
   on("[data-hear]","click",(el,e)=>{ e?.stopPropagation?.();
     playName(el.getAttribute("data-hear")); });

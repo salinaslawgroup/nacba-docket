@@ -23,3 +23,8 @@ them from everyone else, and protects the last remaining administrator.
 
 Covers the speaker roster, filtering, a speaker's program history, the
 catalogue tab, and the in-person and archive fields on the program form.
+
+    node test/ideas.js
+
+Covers the ideas board: what shows at each status, the schedule-it path,
+editing, and that idea category chips write to idea_categories.

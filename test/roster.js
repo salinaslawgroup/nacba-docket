@@ -165,4 +165,20 @@ check('deep in a speaker page:',[
  ['Programs button still there', ()=>h.includes('id="programs-btn"')],
 ]);
 
+
+// ---- dates and spelling ----
+view={...base,tab:'all'}; render(); h=global.__a.innerHTML;
+check('program tiles:',[
+ ['tile date carries the year', ()=>/class="card-date">[^<]*2026/.test(h)],
+ ['tile shows weekday and month too', ()=>/class="card-date">\w{3}, \w{3} \d{1,2}, 2026/.test(h)],
+]);
+view={...base,tab:'catalog'}; render(); h=global.__a.innerHTML;
+check('catalogue tiles:',[
+ ['older year shown, not assumed', ()=>/class="card-date">[^<]*2023/.test(h)],
+]);
+view={...base,tab:'ideas'}; render(); h=global.__a.innerHTML;
+check('spelling:',[
+ ['Program, not Programme', ()=>h.includes('Program ideas')&&!/Programme/.test(h)],
+]);
+
 process.exit(fails?1:0);

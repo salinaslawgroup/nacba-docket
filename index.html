@@ -360,8 +360,11 @@ const FIELD_NAMES = {
 
 const DAY = 86400000;
 const FMT_SHORT = new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",timeZone:"UTC"});
+/* Anything that lists programs across seasons needs the year; a docket
+   due date sits weeks from its program and does not. */
+const FMT_YEAR  = new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
 const FMT_FULL  = new Intl.DateTimeFormat("en-US",{weekday:"short",month:"long",day:"numeric",year:"numeric",timeZone:"UTC"});
-const FMT_CARD  = new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"});
+const FMT_CARD  = new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
 const FMT_LOG   = new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 
 const parseISO = iso => { const [y,m,d]=iso.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
@@ -569,7 +572,7 @@ function renderAnalytics(){
 
   const rows = done.length ? done.map(p => {
     const m = metrics[p.id], d = derive(m);
-    return "<tr><td class=\"c-date\">"+esc(FMT_SHORT.format(parseISO(p.event_date)))+"</td>" +
+    return "<tr><td class=\"c-date\">"+esc(FMT_YEAR.format(parseISO(p.event_date)))+"</td>" +
       "<td class=\"c-task\">"+esc(p.title)+"</td>" +
       "<td class=\"c-by\">"+esc(show(m.registrations_total))+"</td>" +
       "<td class=\"c-by\">"+esc(show(m.live_attendees))+"</td>" +
@@ -591,7 +594,7 @@ function renderAnalytics(){
       ? '<div class="alerts"><p class="alerts-head">' + missing.length +
         " past program" + (missing.length===1?"":"s") + " with no statistics</p>" +
         missing.map(p => '<div class="alert"><span class="a-date">' +
-          esc(FMT_SHORT.format(parseISO(p.event_date))) + '</span><span class="a-text">' +
+          esc(FMT_YEAR.format(parseISO(p.event_date))) + '</span><span class="a-text">' +
           esc(p.title) + '</span><button class="a-go" data-open="'+p.id+
           '">Record →</button></div>').join("") + "</div>"
       : "") +
@@ -1295,7 +1298,7 @@ function renderIdeas(){
 
   return chrome(
     '<button class="back" data-back>← All programs</button>' +
-    '<h2 style="font-size:1.4rem;margin:0 0 .3rem">Programme ideas</h2>' +
+    '<h2 style="font-size:1.4rem;margin:0 0 .3rem">Program ideas</h2>' +
     '<p class="sub" style="color:var(--muted);margin:0 0 1.1rem">' +
     "What we might run, before it has a date. Schedule one and it becomes a program " +
     "with its own docket.</p>" + filter +
@@ -1387,7 +1390,7 @@ function renderTeam(){
       team.length + (team.length === 1 ? " person" : " people") + "</span></p>" +
       rows + "</section>" + addForm +
     '<p class="sub" style="max-width:60ch;color:var(--muted);font-size:.9rem">' +
-    "Adding an email authorises it — it does not create an account or send anything. " +
+    "Adding an email authorizes it — it does not create an account or send anything. " +
     "The person goes to this site, enters that email, and gets a sign-in link. Until " +
     "their address is on this list they can sign in and still see nothing.</p>");
 }
@@ -1487,7 +1490,7 @@ function newProgramForm(){
     '<input type="text" id="np-note" placeholder="Anything staff should know"></div>' +
     '<div class="form-row">' +
     '<div class="field"><label class="field-label" for="np-venue">Venue (in-person only)</label>' +
-    '<input type="text" id="np-venue" placeholder="Hotel or conference centre"></div>' +
+    '<input type="text" id="np-venue" placeholder="Hotel or conference center"></div>' +
     '<div class="field"><label class="field-label" for="np-loc">Location (in-person only)</label>' +
     '<input type="text" id="np-loc" placeholder="City, State"></div></div>' +
     '<div class="field"><label class="field-label" for="np-store">Store link</label>' +

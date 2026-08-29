@@ -111,6 +111,24 @@
   .stat{background:var(--surface);padding:.7rem .8rem;display:flex;flex-direction:column;gap:.15rem}
   .stat-k{font-size:.76rem;color:var(--faint)}
   .stat-v{font-size:1.15rem;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  /* run sheet — read at a glance, under pressure */
+  .crew{padding:.7rem 0;border-top:1px solid var(--rule)}
+  .crew:first-of-type{border-top:none;padding-top:0}
+  .crew-name{font-weight:600;font-size:1.05rem}
+  .crew-bit{font-size:.92rem;color:var(--muted);margin-top:.12rem}
+  .crew-bit a{color:var(--accent);text-decoration:none}
+  .run-phase{margin-bottom:1rem}
+  .run-step{display:flex;gap:.75rem;align-items:flex-start;padding:.6rem 0;
+    border-top:1px solid var(--rule);cursor:pointer}
+  .run-step:first-of-type{border-top:none}
+  .run-step input{width:20px;height:20px;accent-color:var(--accent);margin:.1rem 0 0;flex:none}
+  .run-text{font-size:1.02rem;line-height:1.45}
+  .run-step.is-done .run-text{color:var(--faint);text-decoration:line-through;
+    text-decoration-thickness:1px}
+  .run-src{display:block;font-size:.76rem;color:var(--faint);text-decoration:none;margin-top:.1rem}
+  .run-by{display:inline-block;font-size:.76rem;color:var(--ok);margin-left:.5rem;
+    text-decoration:none}
   .callout-note{background:var(--accent-soft);border-left:3px solid var(--brand);
     border-radius:0 4px 4px 0;padding:.9rem 1.1rem;font-size:.93rem;color:var(--ink)}
 
@@ -312,6 +330,13 @@ const IDEA_STATUS = [
   { id:"scheduled",   label:"Scheduled" },
   { id:"declined",    label:"Declined" }
 ];
+const RUN_PHASES = [
+  { id:"before", label:"Before we go live", when:"From 30 minutes out" },
+  { id:"start",  label:"Going live",        when:"On the hour" },
+  { id:"during", label:"During the program", when:"" },
+  { id:"close",  label:"Closing",            when:"" }
+];
+
 const statusLabel = s => (IDEA_STATUS.find(x => x.id === s) || {}).label || s;
 
 const kindLabel = k => (PROGRAM_KINDS.find(x => x.id === (k||"paid")) || {}).label || "";
@@ -348,7 +373,7 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
 let session=null, programs=[], roster=[], history=[], links={}, uploads={},
-    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", ideas=[], ideaCats={}, metrics={}, busy=false;
+    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", ideas=[], ideaCats={}, metrics={}, runSheet={}, busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null,
   creating:false, cat:null, speakerId:null, q:"", stype:null, editRoster:false,
   istatus:null, editIdea:null, editStats:false };
@@ -460,6 +485,34 @@ async function playName(id){
     new Audio(audioCache[id]).play();
     toast("Playing " + (data.name || ""));
   } catch (e) { toast("Could not play that recording", true); }
+}
+
+/* Generated the first time someone opens it, then loaded. Only
+   programs that actually run get 23 rows. */
+async function openRunSheet(pid){
+  view = { ...view, name:"season", tab:"runsheet", id:pid,
+           edit:false, editSpeaker:null, editStats:false };
+  render(); window.scrollTo(0,0);
+  try {
+    await sb.rpc("ensure_run_sheet", { p_program: pid });
+    const { data, error } = await sb.from("run_sheet_items")
+      .select("id, program_id, phase, seq, step, source, done, done_by, done_at")
+      .eq("program_id", pid);
+    if (!error) runSheet[pid] = data || [];
+  } catch (e) { runSheet[pid] = runSheet[pid] || []; }
+  if (view.tab === "runsheet" && view.id === pid) render();
+}
+
+async function toggleRunStep(id, done){
+  const pid = view.id, list = runSheet[pid] || [];
+  const it = list.find(x => x.id === id);
+  if (!it) return;
+  const prev = it.done;
+  it.done = done;
+  if (done) it.done_by = session?.user?.email || "";
+  render();
+  const { error } = await sb.from("run_sheet_items").update({ done }).eq("id", id);
+  if (error) { it.done = prev; render(); toast("Not saved — " + error.message, true); }
 }
 
 async function saveStats(pid){
@@ -1129,6 +1182,68 @@ function statsForm(p, m){
     "Blank stays blank — it is not the same as zero.</span></div></div></section>";
 }
 
+function renderRunSheet(){
+  const p = programs.find(x => x.id === view.id);
+  if (!p) return chrome("");
+  const items = runSheet[p.id] || [];
+  const ev = parseISO(p.event_date);
+  const days = diffDays(todayUTC(), ev);
+  const doneN = items.filter(i => i.done).length;
+
+  const when = days === 0 ? "Today" : days > 0 ? "In " + days + " days"
+             : Math.abs(days) + " days ago";
+
+  /* Who is on, how to say their name, and how to reach them if the
+     connection drops — §6.2 asks for contact details to hand. */
+  const people = p.program_speakers.length
+    ? p.program_speakers.map(ps => {
+        const s = ps.speakers || {};
+        return '<div class="crew">' +
+          '<div class="crew-name">' + esc(s.full_name) +
+            (s.name_audio_at ? ' <button class="mini" data-hear="'+s.id+'">▸ hear</button>' : "") +
+          "</div>" +
+          (s.preferred_title ? '<div class="crew-bit">Introduce as: '+esc(s.preferred_title)+"</div>" : "") +
+          (s.pronunciation ? '<div class="crew-bit">Say: <b>'+esc(s.pronunciation)+"</b></div>" : "") +
+          (ps.topic ? '<div class="crew-bit">Topic: '+esc(ps.topic)+"</div>" : "") +
+          '<div class="crew-bit">' +
+            (s.phone ? '<a href="tel:'+esc(s.phone.replace(/[^0-9+]/g,""))+'">'+esc(s.phone)+"</a>" : "") +
+            (s.phone && s.email ? " · " : "") +
+            (s.email ? '<a href="mailto:'+esc(s.email)+'">'+esc(s.email)+"</a>" : "") +
+          "</div></div>";
+      }).join("")
+    : '<p class="empty-note">No speakers on this program.</p>';
+
+  const phases = RUN_PHASES.map(ph => {
+    const rows = items.filter(i => i.phase === ph.id)
+      .sort((a,b) => a.seq - b.seq)
+      .map(i =>
+        '<label class="run-step' + (i.done ? " is-done" : "") + '">' +
+        '<input type="checkbox" data-run="'+i.id+'"'+(i.done?" checked":"")+">" +
+        '<span class="run-text">'+esc(i.step)+
+          '<span class="run-src">'+esc(i.source)+"</span>" +
+          (i.done && i.done_by ? '<span class="run-by">'+esc(i.done_by.split("@")[0])+"</span>" : "") +
+        "</span></label>").join("");
+    if (!rows) return "";
+    return '<section class="panel run-phase"><p class="panel-head"><span>'+esc(ph.label)+
+      "</span><span>"+esc(ph.when)+"</span></p>"+rows+"</section>";
+  }).join("");
+
+  return chrome(
+    '<button class="back" data-back>← All programs</button>' +
+    '<div class="detail-head"><p class="d-date"><span>Run sheet · ' +
+      esc(FMT_FULL.format(ev)) + " · 12:00–1:30 PT · " + esc(when) + "</span>" +
+      '<button class="mini" data-open="'+p.id+'">Program page</button></p>' +
+      "<h2>"+esc(p.title)+"</h2>" +
+      '<p class="desc">' + doneN + " of " + items.length + " steps done" +
+      (p.kind === "vendor"
+        ? ' · <b style="color:var(--warn)">Sponsored program — disclose it at the top and offer no CLE</b>'
+        : "") + "</p></div>" +
+    '<section class="panel"><p class="panel-head"><span>On air</span>' +
+      "<span>tap a number if someone drops</span></p>" + people + "</section>" +
+    (items.length ? phases
+      : '<section class="panel"><p class="sub" style="margin:0">Preparing the run sheet…</p></section>'));
+}
+
 function renderIdeas(){
   const shown = view.istatus
     ? ideas.filter(i => i.status === view.istatus)
@@ -1282,6 +1397,7 @@ function renderSeason(){
   if (view.tab==="team") return renderTeam();
   if (view.tab==="ideas") return renderIdeas();
   if (view.tab==="analytics") return renderAnalytics();
+  if (view.tab==="runsheet") return renderRunSheet();
   if (view.tab==="roster") return view.speakerId ? renderSpeaker() : renderRoster();
   if (view.tab==="history") return chrome(historyPanel(null));
 
@@ -1336,10 +1452,20 @@ function card(p){
   return '<button class="card'+(past?" is-past":"")+(urgent?" is-urgent":"")+'" data-open="'+p.id+
     '"><div class="card-top"><span class="card-date">'+esc(FMT_CARD.format(d))+
     '</span><span class="card-days'+(!past&&days<=35?" soon":"")+'">'+esc(daysTxt)+
-    "</span></div><h3>"+esc(p.title)+"</h3>"+'<div class="speakers-line">'+sp+
-    '</div><div class="gates">'+gates+'</div><div class="card-foot"><span>'+
-    (past?"Complete":"12:00–1:30 PT")+"</span>"+
-    (late?'<span class="late-n">'+late+" overdue</span>":"<span></span>")+"</div></button>";
+    "</span></div><h3>"+esc(p.title)+"</h3>"+'<div class="speakers-line">'+sp+"</div>"+
+    ((progCats[p.id]||[]).length
+      ? '<div class="cat-tags">'+(progCats[p.id]||[]).map(id=>
+          '<span class="cat-tag">'+esc(catName(id))+"</span>").join("")+"</div>"
+      : "")+
+    '<div class="gates">'+gates+'</div><div class="card-foot"><span>'+
+    (p.archived ? (p.location ? esc(p.location) : "Catalogue")
+      : past ? "Complete"
+      : ((p.kind && p.kind!=="paid") ? esc(kindLabel(p.kind).split(" (")[0])
+                                     : "12:00–1:30 PT"))+"</span>"+
+    (late ? '<span class="late-n">'+late+" overdue</span>"
+      : (!past && days<=1 && !p.archived
+          ? '<span style="color:var(--accent);font-weight:600">Run sheet ready</span>'
+          : "<span></span>"))+"</div></button>";
 }
 
 function newProgramForm(){
@@ -1384,7 +1510,9 @@ function renderDetail(){
   const head = view.edit ? editProgramForm(p) :
     '<div class="detail-head"><p class="d-date"><span>'+esc(FMT_FULL.format(d))+
     " · 12:00–1:30 PT · "+(past?Math.abs(days)+" days ago":(days===0?"Today":days+" days out"))+
-    '</span><button class="mini" id="edit-program">Edit program</button></p><h2>'+esc(p.title)+"</h2>"+
+    ((p.kind && p.kind!=="paid") ? " · "+esc(kindLabel(p.kind)) : "")+
+    '</span><button class="mini" data-runsheet="'+p.id+'">Run sheet</button>'+
+    '<button class="mini" id="edit-program">Edit program</button></p><h2>'+esc(p.title)+"</h2>"+
     (p.description ? '<p class="desc">'+esc(p.description)+"</p>"
       : '<p class="desc missing">No description on file — registration cannot open without one.</p>')+
     "</div>";
@@ -1853,6 +1981,10 @@ function wire(){
   on("[data-idel]","click",el=>{
     if (confirm("Delete the idea \"" + el.getAttribute("data-t") + "\"?"))
       deleteIdea(el.getAttribute("data-idel")); });
+
+  on("[data-runsheet]","click",(el,e)=>{ e?.stopPropagation?.();
+    openRunSheet(el.getAttribute("data-runsheet")); });
+  on("[data-run]","change",el=>toggleRunStep(el.getAttribute("data-run"), el.checked));
 
   on("[data-hear]","click",(el,e)=>{ e?.stopPropagation?.();
     playName(el.getAttribute("data-hear")); });

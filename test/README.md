@@ -33,3 +33,14 @@ editing, and that idea category chips write to idea_categories.
 
 Covers the statistics: the derived maths, that a blank stays blank while a
 zero stays zero, the season roll-up, and which past programs get chased.
+
+    node test/runsheet.js
+
+Covers the moderator's run sheet: the four phases, progress, speaker
+contacts and pronunciation, the sponsored-program warning, and the ways in
+from the program page and the season card.
+
+Assertions here look for markup in context — `class="card"` followed by
+`cat-tags` — not just the presence of a word. A check for the text
+"Student Loans" passed for weeks while the card rendered no tags at all,
+because the filter chips contain the same words.

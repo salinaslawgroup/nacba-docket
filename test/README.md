@@ -28,3 +28,8 @@ catalogue tab, and the in-person and archive fields on the program form.
 
 Covers the ideas board: what shows at each status, the schedule-it path,
 editing, and that idea category chips write to idea_categories.
+
+    node test/metrics.js
+
+Covers the statistics: the derived maths, that a blank stays blank while a
+zero stays zero, the season roll-up, and which past programs get chased.

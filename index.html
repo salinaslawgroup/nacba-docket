@@ -106,6 +106,11 @@
   .cat-tag{background:var(--accent-soft);color:var(--accent);border-radius:100px;
     padding:.12rem .55rem;font-size:.74rem;font-weight:600;white-space:nowrap}
   .cat-filter{display:flex;flex-wrap:wrap;gap:.35rem;margin:0 0 1.25rem}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:1px;
+    background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+  .stat{background:var(--surface);padding:.7rem .8rem;display:flex;flex-direction:column;gap:.15rem}
+  .stat-k{font-size:.76rem;color:var(--faint)}
+  .stat-v{font-size:1.15rem;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
   .callout-note{background:var(--accent-soft);border-left:3px solid var(--brand);
     border-radius:0 4px 4px 0;padding:.9rem 1.1rem;font-size:.93rem;color:var(--ink)}
 
@@ -343,10 +348,10 @@ const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 const val = id => (document.getElementById(id)?.value ?? "").trim();
 
 let session=null, programs=[], roster=[], history=[], links={}, uploads={},
-    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", ideas=[], ideaCats={}, busy=false;
+    categories=[], progCats={}, spkCats={}, team=[], myRole="staff", ideas=[], ideaCats={}, metrics={}, busy=false;
 let view = { name:"season", tab:"upcoming", id:null, edit:false, editSpeaker:null,
   creating:false, cat:null, speakerId:null, q:"", stype:null, editRoster:false,
-  istatus:null, editIdea:null };
+  istatus:null, editIdea:null, editStats:false };
 const app = document.getElementById("app");
 
 /* ================= sign in ================= */
@@ -373,7 +378,7 @@ function renderGate(msg, kind) {
 
 /* ================= data ================= */
 async function loadData() {
-  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes, tRes, iRes, icRes] = await Promise.all([
+  const [pRes, sRes, lRes, uRes, cRes, pcRes, scRes, tRes, iRes, icRes, mRes] = await Promise.all([
     sb.from("programs").select(`id, slug, event_date, title, description, note, kind,
       archived, venue, location, store_url, recording_url,
       program_speakers ( id, topic, confirmation, sort_order,
@@ -394,7 +399,8 @@ async function loadData() {
     sb.from("speaker_categories").select("speaker_id, category_id"),
     sb.from("allowed_emails").select("email, role, full_name, title, added_at").order("email"),
     sb.from("program_ideas").select("*").order("created_at", { ascending:false }),
-    sb.from("idea_categories").select("idea_id, category_id")
+    sb.from("idea_categories").select("idea_id, category_id"),
+    sb.from("program_metrics").select("*")
   ]);
   if (pRes.error) throw pRes.error;
   programs = (pRes.data||[]).map(p => ({ ...p,
@@ -419,6 +425,8 @@ async function loadData() {
   ideaCats = {};
   (icRes.error ? [] : (icRes.data||[])).forEach(r => {
     (ideaCats[r.idea_id] = ideaCats[r.idea_id] || []).push(r.category_id); });
+  metrics = {};
+  (mRes.error ? [] : (mRes.data||[])).forEach(m => { metrics[m.program_id] = m; });
   const me = (session?.user?.email || "").toLowerCase();
   myRole = (team.find(t => (t.email||"").toLowerCase() === me) || {}).role || "staff";
 }
@@ -452,6 +460,92 @@ async function playName(id){
     new Audio(audioCache[id]).play();
     toast("Playing " + (data.name || ""));
   } catch (e) { toast("Could not play that recording", true); }
+}
+
+async function saveStats(pid){
+  const n = id => { const v = val(id); return v === "" ? null : Number(v); };
+  const row = {
+    program_id: pid,
+    registrations_total: n("st-reg"), registrations_member: n("st-mem"),
+    registrations_nonmember: n("st-non"), live_attendees: n("st-att"),
+    gross_revenue: n("st-rev"), survey_responses: n("st-sresp"),
+    survey_score: n("st-sscore"), nonmember_joined: n("st-join"),
+    tech_issues: val("st-tech"), notes: val("st-notes")
+  };
+  const bad = Object.entries(row).find(([k,v]) =>
+    typeof v === "number" && (Number.isNaN(v) || v < 0));
+  if (bad) { toast("That is not a number: " + bad[0].replace(/_/g," "), true); return; }
+  if (row.survey_score !== null && row.survey_score > 5) {
+    toast("Survey score is out of 5", true); return;
+  }
+  const r = row.registrations_total, mem = row.registrations_member,
+        nm = row.registrations_nonmember;
+  if (r !== null && mem !== null && nm !== null && mem + nm !== r) {
+    toast("Members plus non-members is " + (mem+nm) + ", not " + r, true); return;
+  }
+  view.editStats = false;
+  await mutate(() => sb.from("program_metrics").upsert(row, { onConflict: "program_id" }),
+    "Statistics recorded");
+}
+
+function renderAnalytics(){
+  const done = programs
+    .filter(p => metrics[p.id])
+    .sort((a,b) => (a.event_date < b.event_date ? 1 : -1));
+
+  const sum = k => done.reduce((t,p) => {
+    const v = num(metrics[p.id][k]); return v === null ? t : t + v; }, 0);
+  const counted = k => done.filter(p => num(metrics[p.id][k]) !== null).length;
+
+  const regs = sum("registrations_total"), att = sum("live_attendees"),
+        rev  = sum("gross_revenue"), nonm = sum("registrations_nonmember"),
+        join = sum("nonmember_joined");
+
+  const head = [
+    ["Programs recorded", done.length + " of " + programs.length],
+    ["Registrations", counted("registrations_total") ? regs.toLocaleString() : "—"],
+    ["Live attendees", counted("live_attendees") ? att.toLocaleString() : "—"],
+    ["Attendance rate", (regs > 0 && counted("live_attendees")) ? Math.round(1000*att/regs)/10 + "%" : "—"],
+    ["Gross revenue", counted("gross_revenue") ? money(rev) : "—"],
+    ["Per attendee", (att > 0 && counted("gross_revenue")) ? money(Math.round(100*rev/att)/100) : "—"],
+    ["Non-members", counted("registrations_nonmember") ? nonm.toLocaleString() : "—"],
+    ["Joined after outreach", counted("nonmember_joined") ? join.toLocaleString() : "—"],
+    ["Conversion", (nonm > 0 && counted("nonmember_joined")) ? Math.round(1000*join/nonm)/10 + "%" : "—"]
+  ].map(([k,v]) => '<div class="stat"><span class="stat-k">'+esc(k)+
+      '</span><span class="stat-v">'+esc(v)+"</span></div>").join("");
+
+  const rows = done.length ? done.map(p => {
+    const m = metrics[p.id], d = derive(m);
+    return "<tr><td class=\"c-date\">"+esc(FMT_SHORT.format(parseISO(p.event_date)))+"</td>" +
+      "<td class=\"c-task\">"+esc(p.title)+"</td>" +
+      "<td class=\"c-by\">"+esc(show(m.registrations_total))+"</td>" +
+      "<td class=\"c-by\">"+esc(show(m.live_attendees))+"</td>" +
+      "<td class=\"c-by\">"+esc(pct(d.attendance))+"</td>" +
+      "<td class=\"c-by\">"+esc(money(m.gross_revenue))+"</td>" +
+      "<td class=\"c-by\">"+esc(m.survey_score ? m.survey_score : "—")+"</td>" +
+      "<td class=\"c-by\">"+esc(pct(d.conversion))+"</td></tr>";
+  }).join("") : '<tr><td colspan="8" style="padding:1rem 0;color:var(--faint)">Nothing recorded yet.</td></tr>';
+
+  const missing = programs.filter(p => !p.archived && isPast(p) && !metrics[p.id]);
+
+  return chrome(
+    '<button class="back" data-back>← All programs</button>' +
+    '<h2 style="font-size:1.4rem;margin:0 0 .3rem">Analytics</h2>' +
+    '<p class="sub" style="color:var(--muted);margin:0 0 1.1rem">Entered by hand after each ' +
+    "program. Blanks are genuinely blank — nothing here is averaged from a guess.</p>" +
+    '<div class="stats" style="margin-bottom:1.5rem">' + head + "</div>" +
+    (missing.length
+      ? '<div class="alerts"><p class="alerts-head">' + missing.length +
+        " past program" + (missing.length===1?"":"s") + " with no statistics</p>" +
+        missing.map(p => '<div class="alert"><span class="a-date">' +
+          esc(FMT_SHORT.format(parseISO(p.event_date))) + '</span><span class="a-text">' +
+          esc(p.title) + '</span><button class="a-go" data-open="'+p.id+
+          '">Record →</button></div>').join("") + "</div>"
+      : "") +
+    '<section class="panel"><p class="panel-head"><span>By program</span><span>newest first</span></p>' +
+    '<div class="dk-scroll"><table class="dk"><thead><tr><th>Date</th><th>Program</th>' +
+    "<th>Reg.</th><th>Live</th><th>Rate</th><th>Revenue</th><th>Survey</th><th>Conv.</th>" +
+    "</tr></thead><tbody>" + rows + "</tbody></table></div></section>");
 }
 
 async function addIdea(){
@@ -576,6 +670,27 @@ async function toggleCat(kind, owner, id, isOn) {
   await mutate(() => isOn
     ? sb.from(table).delete().eq(col, owner).eq("category_id", id)
     : sb.from(table).insert({ [col]: owner, category_id: id }));
+}
+
+/* Nothing is invented. A figure that was never entered stays blank
+   rather than becoming a zero that drags every average down. */
+const num  = v => (v === null || v === undefined || v === "") ? null : Number(v);
+const show = v => (v === null || v === undefined) ? "—" : v;
+const pct  = v => (v === null || v === undefined) ? "—" : v + "%";
+const money = v => (v === null || v === undefined) ? "—"
+  : "$" + Number(v).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function derive(m){
+  if (!m) return {};
+  const r = num(m.registrations_total), a = num(m.live_attendees),
+        g = num(m.gross_revenue), mem = num(m.registrations_member),
+        nm = num(m.registrations_nonmember), j = num(m.nonmember_joined);
+  return {
+    attendance: (r > 0 && a !== null) ? Math.round(1000*a/r)/10 : null,
+    perHead:    (a > 0 && g !== null) ? Math.round(100*g/a)/100 : null,
+    memberShare:(r > 0 && mem !== null) ? Math.round(1000*mem/r)/10 : null,
+    conversion: (nm > 0 && j !== null) ? Math.round(1000*j/nm)/10 : null
+  };
 }
 
 const kb = n => n >= 1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB";
@@ -822,8 +937,9 @@ function chrome(inner){
     '<span class="today">' + esc(FMT_FULL.format(todayUTC())) + "<br>" +
     esc(session?.user?.email||"") + '</span><div class="btn-row">' +
     nav("programs-btn","Programs", view.name==="detail" ||
-        (view.name==="season" && !["roster","team","history","ideas"].includes(view.tab))) +
+        (view.name==="season" && !["roster","team","history","ideas","analytics"].includes(view.tab))) +
     nav("ideas-btn","Ideas",     view.tab==="ideas") +
+    nav("stats-btn","Analytics", view.tab==="analytics") +
     nav("roster-btn","Speakers", view.tab==="roster") +
     nav("team-btn","Team",       view.tab==="team") +
     '<button class="btn" id="signout">Sign out</button></div></div></header>' + inner +
@@ -980,6 +1096,39 @@ function rosterSpeakerForm(s){
     "</div></div></section>";
 }
 
+function statsForm(p, m){
+  m = m || {};
+  const f = (id,label,val,ph,type) =>
+    '<div class="field"><label class="field-label" for="'+id+'">'+esc(label)+"</label>" +
+    '<input type="'+(type||"number")+'" id="'+id+'" value="'+
+      esc(val===null||val===undefined?"":val)+'"'+(ph?' placeholder="'+esc(ph)+'"':"")+
+      (type?"":' min="0" step="1"')+"></div>";
+
+  return '<section class="panel"><p class="panel-head"><span>Record the statistics</span>' +
+    "<span>leave anything unknown blank</span></p><div class=\"form\">" +
+    '<div class="form-row">' + f("st-reg","Total registrations",m.registrations_total) +
+      f("st-mem","Members",m.registrations_member) +
+      f("st-non","Non-members",m.registrations_nonmember) + "</div>" +
+    '<div class="form-row">' + f("st-att","Live attendees",m.live_attendees) +
+      '<div class="field"><label class="field-label" for="st-rev">Gross revenue</label>' +
+      '<input type="number" id="st-rev" min="0" step="0.01" value="'+
+        esc(m.gross_revenue??"")+'" placeholder="0.00"></div>' + "</div>" +
+    '<div class="form-row">' + f("st-sresp","Survey responses",m.survey_responses) +
+      '<div class="field"><label class="field-label" for="st-sscore">Survey score (out of 5)</label>' +
+      '<input type="number" id="st-sscore" min="0" max="5" step="0.01" value="'+
+        esc(m.survey_score??"")+'"></div>' +
+      f("st-join","Non-members who joined",m.nonmember_joined) + "</div>" +
+    '<div class="field"><label class="field-label" for="st-tech">Technical problems</label>' +
+    '<input type="text" id="st-tech" value="'+esc(m.tech_issues||"")+
+      '" placeholder="None, or what went wrong"></div>' +
+    '<div class="field"><label class="field-label" for="st-notes">Notes and feedback</label>' +
+    "<textarea id=\"st-notes\">"+esc(m.notes||"")+"</textarea></div>" +
+    '<div class="form-actions"><button class="btn primary" id="st-save" data-p="'+p.id+
+    '">Save</button><button class="btn" id="st-cancel">Cancel</button>' +
+    '<span class="hint" style="font-size:.85rem;color:var(--faint)">' +
+    "Blank stays blank — it is not the same as zero.</span></div></div></section>";
+}
+
 function renderIdeas(){
   const shown = view.istatus
     ? ideas.filter(i => i.status === view.istatus)
@@ -1132,6 +1281,7 @@ function renderSeason(){
   if (view.creating) return chrome(newProgramForm());
   if (view.tab==="team") return renderTeam();
   if (view.tab==="ideas") return renderIdeas();
+  if (view.tab==="analytics") return renderAnalytics();
   if (view.tab==="roster") return view.speakerId ? renderSpeaker() : renderRoster();
   if (view.tab==="history") return chrome(historyPanel(null));
 
@@ -1313,6 +1463,34 @@ function renderDetail(){
       catChips("program", p.id, progCats[p.id] || []) + "</section>"
     : "";
 
+  /* post-event statistics */
+  const m = metrics[p.id], dv = derive(m);
+  const statsPanel = view.editStats
+    ? statsForm(p, m)
+    : '<section class="panel"><p class="panel-head"><span>Statistics · §3.2</span>' +
+      '<button class="mini" id="st-edit">' + (m ? "Edit" : "Record them") + "</button></p>" +
+      (m
+        ? '<div class="stats">' + [
+            ["Registrations", show(m.registrations_total)],
+            ["Members", show(m.registrations_member)],
+            ["Non-members", show(m.registrations_nonmember)],
+            ["Live attendees", show(m.live_attendees)],
+            ["Attendance rate", pct(dv.attendance)],
+            ["Gross revenue", money(m.gross_revenue)],
+            ["Per attendee", money(dv.perHead)],
+            ["Survey", m.survey_score ? m.survey_score + " / 5 (" + show(m.survey_responses) + ")" : "—"],
+            ["Non-members joined", show(m.nonmember_joined)],
+            ["Conversion", pct(dv.conversion)]
+          ].map(([k,v]) => '<div class="stat"><span class="stat-k">'+esc(k)+
+            '</span><span class="stat-v">'+esc(v)+"</span></div>").join("") + "</div>" +
+          (m.tech_issues ? '<p class="note-row">Technical problems: '+esc(m.tech_issues)+"</p>" : "") +
+          (m.notes ? '<p class="sub" style="margin:.6rem 0 0">'+esc(m.notes)+"</p>" : "") +
+          '<p class="sub" style="margin:.6rem 0 0;font-size:.82rem;color:var(--faint)">Recorded by ' +
+            esc((m.recorded_by||"").split("@")[0]) + "</p>"
+        : '<p class="sub" style="margin:0">Nothing recorded yet. §3.2 asks for these before ' +
+          "the debrief goes to the EMC Chair.</p>") +
+      "</section>";
+
   /* what speakers have sent in */
   const inbox = p.program_speakers.flatMap(ps =>
     (uploads[ps.id]||[]).map(u => ({ ...u, who: ps.speakers?.full_name || "" })));
@@ -1334,7 +1512,7 @@ function renderDetail(){
     "</tbody></table></div></section>";
 
   return chrome('<button class="back" data-back>← All programs</button>'+head+
-    catPanel+speakersPanel+pkgPanel+inboxPanel+docket+historyPanel(p.id));
+    catPanel+speakersPanel+pkgPanel+inboxPanel+statsPanel+docket+historyPanel(p.id));
 }
 
 function editProgramForm(p){
@@ -1551,10 +1729,22 @@ function wire(){
            edit:false, editSpeaker:null, editRoster:false, creating:false };
     render(); window.scrollTo(0,0);
   });
+  document.getElementById("stats-btn")?.addEventListener("click", ()=>{
+    view={ name:"season", tab:"analytics", id:null, speakerId:null, q:"", cat:null, stype:null,
+           edit:false, editSpeaker:null, editRoster:false, creating:false,
+           istatus:null, editIdea:null, editStats:false };
+    render(); window.scrollTo(0,0);
+  });
+  document.getElementById("st-edit")?.addEventListener("click", ()=>{
+    view={ ...view, editStats:true }; render(); });
+  document.getElementById("st-cancel")?.addEventListener("click", ()=>{
+    view={ ...view, editStats:false }; render(); });
+  document.getElementById("st-save")?.addEventListener("click", ()=>
+    saveStats(document.getElementById("st-save").getAttribute("data-p")));
   document.getElementById("ideas-btn")?.addEventListener("click", ()=>{
     view={ name:"season", tab:"ideas", id:null, speakerId:null, q:"", cat:null, stype:null,
            edit:false, editSpeaker:null, editRoster:false, creating:false,
-           istatus:null, editIdea:null };
+           istatus:null, editIdea:null, editStats:false };
     render(); window.scrollTo(0,0);
   });
   document.getElementById("ni-add")?.addEventListener("click", addIdea);
@@ -1600,7 +1790,7 @@ function wire(){
 
   on("[data-open]","click",(el,e)=>{ e.stopPropagation();
     const id = el.getAttribute("data-open");
-    view={ ...view, name:"detail", id, edit:false, editSpeaker:null };
+    view={ ...view, name:"detail", id, edit:false, editSpeaker:null, editStats:false };
     history = [];
     render(); window.scrollTo(0,0);          // open it now
     loadHistory(id).then(() => {             // history catches up
